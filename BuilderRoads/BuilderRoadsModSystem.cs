@@ -7,6 +7,14 @@ using Vintagestory.API.MathTools;
 
 namespace BuilderRoads;
 
+public enum CardinalDirection
+{
+    North,
+    South,
+    East,
+    West
+}
+
 public class BuilderRoadsModSystem : ModSystem
 {
     private ICoreClientAPI clientApi;
@@ -91,7 +99,8 @@ public class BuilderRoadsModSystem : ModSystem
         // Check if we've moved far enough to place a new segment (>0.8 blocks)
         if (distance > 0.8)
         {
-            player.ShowChatNotification($"Moved {distance:F2} blocks - would place road here!");
+            CardinalDirection direction = CalculateDirection(lastPlacementPos, currentPos);
+            player.ShowChatNotification($"Moved {distance:F2} blocks {direction} - would place road here!");
             lastPlacementPos = currentPos.Copy();
         }
     }
@@ -102,6 +111,24 @@ public class BuilderRoadsModSystem : ModSystem
         int dy = to.Y - from.Y;
         int dz = to.Z - from.Z;
         return Math.Sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    private CardinalDirection CalculateDirection(BlockPos from, BlockPos to)
+    {
+        int dx = to.X - from.X;
+        int dz = to.Z - from.Z;
+
+        // Determine which axis has the strongest movement
+        if (Math.Abs(dx) > Math.Abs(dz))
+        {
+            // Moving primarily along X axis
+            return dx > 0 ? CardinalDirection.East : CardinalDirection.West;
+        }
+        else
+        {
+            // Moving primarily along Z axis
+            return dz > 0 ? CardinalDirection.South : CardinalDirection.North;
+        }
     }
 
     public override void Dispose()

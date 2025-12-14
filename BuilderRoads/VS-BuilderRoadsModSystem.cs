@@ -16,11 +16,11 @@ public class VS_BuilderRoadsModSystem : ModSystem
 
     public override void StartServerSide(ICoreServerAPI api)
     {
-        Mod.Logger.Notification("Hello from template mod server side: " + Lang.Get("vs-builderroads:hello"));
+        Mod.Logger.Notification("Hello from template mod server side: " + Lang.Get("builderroads:hello"));
     }
 
     public override void StartClientSide(ICoreClientAPI api)
     {
-        Mod.Logger.Notification("Hello from template mod client side: " + Lang.Get("vs-builderroads:hello"));
+        Mod.Logger.Notification("Hello from template mod client side: " + Lang.Get("builderroads:hello"));
     }
 }

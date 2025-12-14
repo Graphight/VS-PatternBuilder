@@ -26,7 +26,7 @@ public static class Program
 
 public class BuildContext : FrostingContext
 {
-    public const string ProjectName = "VS_BuilderRoads";
+    public const string ProjectName = "BuilderRoads";
     public string BuildConfiguration { get; }
     public string Version { get; }
     public string Name { get; }

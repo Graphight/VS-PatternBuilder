@@ -1,2 +1,2 @@
-# vs-road-builder
-A road building utility for Vintage Story
+# VS-RoadBuilder
+A road building utility mod for Vintage Story

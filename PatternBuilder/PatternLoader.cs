@@ -194,6 +194,23 @@ public class PatternLoader
                         { 'P', "player" }
                     }
                 }
+            },
+            new
+            {
+                FileName = "slot5_stone_tunnel.json",
+                Pattern = new PatternDefinition
+                {
+                    Name = "Default Tunnel",
+                    Description = "5-wide stone brick tunnel",
+                    Pattern = "SSSSS,S_P_S,S___S,S___S,SSSSS",
+                    Width = 5,
+                    Height = 5,
+                    Blocks = new Dictionary<char, string>
+                    {
+                        { 'S', "game:stonebricks-granite" },
+                        { 'P', "player" }
+                    }
+                }
             }
         };
 

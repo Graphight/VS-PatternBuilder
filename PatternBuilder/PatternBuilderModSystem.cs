@@ -93,7 +93,7 @@ public class PatternBuilderModSystem : ModSystem
 
         RegisterCommands(api);
 
-        tickListenerId = clientApi.Event.RegisterGameTickListener(OnGameTick, 200);
+        tickListenerId = clientApi.Event.RegisterGameTickListener(OnGameTick, 100);
 
         Mod.Logger.Notification("PatternBuilder loaded - Use .pb help for commands");
     }
@@ -334,8 +334,8 @@ public class PatternBuilderModSystem : ModSystem
         // Calculate distance moved
         double distance = CalculateDistance(lastPlacementPos, currentPos);
 
-        // Check if we've moved far enough to place a new segment (>0.8 blocks)
-        if (distance > 0.8)
+        // Check if we've moved far enough to place a new segment (>0.6 blocks)
+        if (distance > 0.6)
         {
             CardinalDirection direction = CalculateDirection(lastPlacementPos, currentPos);
 

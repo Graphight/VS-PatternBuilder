@@ -5,6 +5,8 @@ namespace PatternBuilder;
 
 public class PatternManager
 {
+    public const int MaxSlots = 50;
+
     private readonly ICoreAPI api;
     private readonly Dictionary<int, PatternDefinition> patterns;
     private int currentSlot;
@@ -37,7 +39,7 @@ public class PatternManager
 
     public bool SwitchToSlot(int slot)
     {
-        if (slot < 1 || slot > 5)
+        if (slot < 1 || slot > MaxSlots)
         {
             api.Logger.Warning($"PatternBuilder: Invalid slot number: {slot}");
             return false;
@@ -87,7 +89,7 @@ public class PatternManager
 
     private int FindFirstAvailableSlot()
     {
-        for (int i = 1; i <= 5; i++)
+        for (int i = 1; i <= MaxSlots; i++)
         {
             if (patterns.ContainsKey(i))
             {
@@ -102,7 +104,7 @@ public class PatternManager
     {
         var names = new Dictionary<int, string>();
 
-        for (int i = 1; i <= 5; i++)
+        for (int i = 1; i <= MaxSlots; i++)
         {
             if (patterns.TryGetValue(i, out var pattern))
             {

@@ -116,11 +116,11 @@ public class PatternLoader
                 if (i == 0)
                     return false;
 
-                return int.TryParse(afterSlot.Substring(0, i), out slotNumber) && slotNumber >= 1 && slotNumber <= 5;
+                return int.TryParse(afterSlot.Substring(0, i), out slotNumber) && slotNumber >= 1 && slotNumber <= PatternManager.MaxSlots;
             }
         }
 
-        return int.TryParse(afterSlot, out slotNumber) && slotNumber >= 1 && slotNumber <= 5;
+        return int.TryParse(afterSlot, out slotNumber) && slotNumber >= 1 && slotNumber <= PatternManager.MaxSlots;
     }
 
     public void EnsureConfigDirectory(string directory)
@@ -251,7 +251,7 @@ public class PatternLoader
 Pattern files use Vintage Story's recipe grid syntax for easy editing.
 
 File Naming:
-- Files must be named 'slotN_name.json' where N is 1-5
+- Files must be named 'slotN_name.json' where N is 1-{PatternManager.MaxSlots}
 - Example: slot1_road.json, slot2_path.json
 
 Pattern Format:

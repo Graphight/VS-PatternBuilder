@@ -161,7 +161,7 @@ public class PatternBuilderModSystem : ModSystem
                 .HandleWith(OnCommandReload)
             .EndSubCommand()
             .BeginSubCommand("slot")
-                .WithDescription("Switch to pattern slot (1-5)")
+                .WithDescription($"Switch to pattern slot (1-{PatternManager.MaxSlots})")
                 .WithArgs(api.ChatCommands.Parsers.Int("slot"))
                 .HandleWith(OnCommandSlot)
             .EndSubCommand()
@@ -198,7 +198,7 @@ public class PatternBuilderModSystem : ModSystem
         }
 
         clientApi.ShowChatMessage("Available patterns:");
-        for (int i = 1; i <= 5; i++)
+        for (int i = 1; i <= PatternManager.MaxSlots; i++)
         {
             if (patternNames.TryGetValue(i, out string name))
             {
@@ -237,9 +237,9 @@ public class PatternBuilderModSystem : ModSystem
     {
         int slot = (int)args.Parsers[0].GetValue();
 
-        if (slot < 1 || slot > 5)
+        if (slot < 1 || slot > PatternManager.MaxSlots)
         {
-            clientApi.ShowChatMessage("Slot must be between 1 and 5");
+            clientApi.ShowChatMessage($"Slot must be between 1 and {PatternManager.MaxSlots}");
             return TextCommandResult.Error("Invalid slot number");
         }
 

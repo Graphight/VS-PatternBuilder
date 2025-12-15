@@ -8,17 +8,19 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 
 **Phase 2**: Complete - Multi-pattern system with JSON configs
 
-**Phase 3**: Planned - Advanced features (terrain following)
+**Phase 3**: In Progress - Advanced features (carve mode, validation, performance)
 
 **Phase 4**: Planned - In-game pattern editor
 
 ## Features
 
 - **Pattern-based building**: Define custom block patterns in JSON files
-- **5 pattern slots**: Quick-switch between different patterns
+- **50 pattern slots**: Quick-switch between different patterns (configurable)
 - **Movement-based placement**: Walk to build - patterns follow your movement
 - **Directional awareness**: Patterns orient based on movement direction (N/S/E/W)
+- **Adaptive & Carve modes**: Patterns can mold to terrain or carve through it
 - **Hot-reload patterns**: Edit patterns while game is running
+- **Pattern validation**: Automatic validation with helpful error messages
 - **Persistent placement**: Blocks remain after world reload
 - **VS recipe syntax**: Familiar pattern format for Vintage Story modders
 
@@ -30,7 +32,8 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 .pb toggle       Toggle pattern building on/off
 .pb on/off       Enable/disable building mode
 .pb list         Show available patterns
-.pb slot <X>     Switch to pattern at slot <X>
+.pb slot <X>     Switch to pattern at slot <X> (1-50)
+.pb info         Show current pattern details
 .pb reload       Reload patterns from disk
 ```
 
@@ -41,7 +44,7 @@ Patterns are stored in JSON files at:
 ~/Library/Application Support/VintagestoryData/ModConfig/patternbuilder/patterns/
 ```
 
-**File naming**: Pattern files must be named `slotN_name.json` where N is 1-5 (e.g., `slot1_road.json`, `slot2_path.json`).
+**File naming**: Pattern files must be named `slotN_name.json` where N is 1-50 (e.g., `slot1_road.json`, `slot2_path.json`).
 
 ### Example Pattern
 
@@ -52,6 +55,7 @@ Patterns are stored in JSON files at:
   "Pattern": "DDD,GGG,_P_,___",
   "Width": 3,
   "Height": 4,
+  "Mode": "adaptive",
   "Blocks": {
     "D": "game:soil-medium-normal",
     "G": "game:gravel-granite",
@@ -64,6 +68,7 @@ Patterns are stored in JSON files at:
 - Each character maps to a block code
 - `_` = air/empty
 - `P` = player feet position (required for Y-offset)
+- `Mode` = "adaptive" (molds to terrain) or "carve" (cuts through terrain)
 
 ## Installation
 
@@ -103,12 +108,29 @@ dotnet clean  # Clean build artifacts
 5. Edit pattern JSON files in the config directory
 6. Reload patterns with `.pb reload`
 
+## Pattern Modes
+
+**Adaptive Mode** (default):
+- Patterns mold to existing terrain
+- Only places solid blocks, skips air
+- Ideal for roads, paths, and decorative patterns
+
+**Carve Mode**:
+- Patterns cut through terrain
+- Places air blocks to clear space
+- Ideal for tunnels and underground structures
+
+Set mode in pattern JSON:
+```json
+{
+  "Mode": "carve",  // or "adaptive"
+  ...
+}
+```
+
 ## Known Issues
 
-- Sprinting may cause some placements to be missed
-- All patterns currently build below player feet (walls/tunnels need placement mode system)
-
-See [documentation/known_issues.md](documentation/known_issues.md) for full list and backlog.
+See [documentation/known_issues.md](documentation/known_issues.md) for active issues and backlog.
 
 ## Troubleshooting
 

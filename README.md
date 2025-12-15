@@ -5,8 +5,12 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 ## Status
 
 **Phase 1**: Complete - Basic road placement prototype
+
 **Phase 2**: Complete - Multi-pattern system with JSON configs
-**Phase 3**: Planned - Advanced features (terrain following, pattern editor)
+
+**Phase 3**: Planned - Advanced features (terrain following)
+
+**Phase 4**: Planned - In-game pattern editor
 
 ## Features
 
@@ -21,11 +25,12 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 ## Commands
 
 ```
-.pb              Show command help
+.pb              Show command help (default)
+.pb help         Show command help
 .pb toggle       Toggle pattern building on/off
 .pb on/off       Enable/disable building mode
 .pb list         Show available patterns
-.pb slot <1-5>   Switch to pattern slot
+.pb slot <X>     Switch to pattern at slot <X>
 .pb reload       Reload patterns from disk
 ```
 

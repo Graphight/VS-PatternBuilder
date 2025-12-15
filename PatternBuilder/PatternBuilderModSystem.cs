@@ -205,10 +205,11 @@ public class PatternBuilderModSystem : ModSystem
     private TextCommandResult OnCommandHelp(TextCommandCallingArgs args)
     {
         clientApi.ShowChatMessage("PatternBuilder Commands:");
+        clientApi.ShowChatMessage("  .pb help - Show command help");
         clientApi.ShowChatMessage("  .pb toggle - Toggle pattern building on/off");
         clientApi.ShowChatMessage("  .pb on - Enable pattern building");
         clientApi.ShowChatMessage("  .pb off - Disable pattern building");
-        clientApi.ShowChatMessage("  .pb slot <1-5> - Switch to pattern slot");
+        clientApi.ShowChatMessage("  .pb slot <X> - Switch to pattern at slot <X>");
         clientApi.ShowChatMessage("  .pb list - Show available patterns");
         clientApi.ShowChatMessage("  .pb reload - Reload patterns from disk");
         clientApi.ShowChatMessage("");

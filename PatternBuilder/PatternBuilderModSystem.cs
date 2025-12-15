@@ -345,7 +345,6 @@ public class PatternBuilderModSystem : ModSystem
             // Place the road pattern ahead of player
             PlaceRoadPattern(placePos, direction);
 
-            player.ShowChatNotification($"Placed road segment {direction}");
             lastPlacementPos = currentPos.Copy();
         }
     }

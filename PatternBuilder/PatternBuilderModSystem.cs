@@ -7,7 +7,7 @@ using Vintagestory.API.Config;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
 
-namespace BuilderRoads;
+namespace PatternBuilder;
 
 public enum CardinalDirection
 {
@@ -17,7 +17,7 @@ public enum CardinalDirection
     West
 }
 
-public class BuilderRoadsModSystem : ModSystem
+public class PatternBuilderModSystem : ModSystem
 {
     private ICoreClientAPI clientApi;
     private ICoreServerAPI serverApi;
@@ -32,7 +32,7 @@ public class BuilderRoadsModSystem : ModSystem
     private IClientNetworkChannel clientChannel;
     private IServerNetworkChannel serverChannel;
 
-    private const string NetworkChannelId = "builderroads";
+    private const string NetworkChannelId = "patternbuilder";
 
     public override void Start(ICoreAPI api)
     {
@@ -50,7 +50,7 @@ public class BuilderRoadsModSystem : ModSystem
         serverChannel = api.Network.GetChannel(NetworkChannelId)
             .SetMessageHandler<PlacePatternMessage>(OnClientPlacePattern);
 
-        Mod.Logger.Notification("BuilderRoads server-side loaded");
+        Mod.Logger.Notification("PatternBuilder server-side loaded");
     }
 
     private void OnClientPlacePattern(IPlayer fromPlayer, PlacePatternMessage message)
@@ -60,7 +60,7 @@ public class BuilderRoadsModSystem : ModSystem
 
         if (message.BlockIds.Count != message.Positions.Count)
         {
-            Mod.Logger.Warning($"BuilderRoads: Mismatched block counts from {fromPlayer.PlayerName}");
+            Mod.Logger.Warning($"PatternBuilder: Mismatched block counts from {fromPlayer.PlayerName}");
             return;
         }
 
@@ -74,7 +74,7 @@ public class BuilderRoadsModSystem : ModSystem
             blockAccessor.SetBlock(blockId, pos);
         }
 
-        Mod.Logger.Debug($"BuilderRoads: Placed {message.BlockIds.Count} blocks for {fromPlayer.PlayerName}");
+        Mod.Logger.Debug($"PatternBuilder: Placed {message.BlockIds.Count} blocks for {fromPlayer.PlayerName}");
     }
 
     public override void StartClientSide(ICoreClientAPI api)
@@ -95,12 +95,12 @@ public class BuilderRoadsModSystem : ModSystem
 
         tickListenerId = clientApi.Event.RegisterGameTickListener(OnGameTick, 200);
 
-        Mod.Logger.Notification("BuilderRoads loaded - Use .road help for commands");
+        Mod.Logger.Notification("PatternBuilder loaded - Use .pb help for commands");
     }
 
     private void LoadPatterns()
     {
-        var configPath = Path.Combine(clientApi.GetOrCreateDataPath("ModConfig"), "builderroads", "patterns");
+        var configPath = Path.Combine(clientApi.GetOrCreateDataPath("ModConfig"), "patternbuilder", "patterns");
 
         patternLoader.CreateDefaultPatterns(configPath);
 
@@ -109,7 +109,7 @@ public class BuilderRoadsModSystem : ModSystem
         patternManager.LoadPatterns(loadedPatterns);
 
         var patternNames = patternManager.GetAllPatternNames();
-        Mod.Logger.Notification($"BuilderRoads: Available patterns:");
+        Mod.Logger.Notification($"PatternBuilder: Available patterns:");
         foreach (var kvp in patternNames)
         {
             Mod.Logger.Notification($"  Slot {kvp.Key}: {kvp.Value}");
@@ -118,8 +118,8 @@ public class BuilderRoadsModSystem : ModSystem
 
     private void RegisterCommands(ICoreClientAPI api)
     {
-        api.ChatCommands.Create("road")
-            .WithDescription("Road building commands")
+        api.ChatCommands.Create("pb")
+            .WithDescription("Pattern building commands")
             .BeginSubCommand("help")
                 .WithDescription("Show command help")
                 .HandleWith(OnCommandHelp)
@@ -204,15 +204,15 @@ public class BuilderRoadsModSystem : ModSystem
 
     private TextCommandResult OnCommandHelp(TextCommandCallingArgs args)
     {
-        clientApi.ShowChatMessage("BuilderRoads Commands:");
-        clientApi.ShowChatMessage("  .road toggle - Toggle road building on/off");
-        clientApi.ShowChatMessage("  .road on - Enable road building");
-        clientApi.ShowChatMessage("  .road off - Disable road building");
-        clientApi.ShowChatMessage("  .road slot <1-5> - Switch to pattern slot");
-        clientApi.ShowChatMessage("  .road list - Show available patterns");
-        clientApi.ShowChatMessage("  .road reload - Reload patterns from disk");
+        clientApi.ShowChatMessage("PatternBuilder Commands:");
+        clientApi.ShowChatMessage("  .pb toggle - Toggle pattern building on/off");
+        clientApi.ShowChatMessage("  .pb on - Enable pattern building");
+        clientApi.ShowChatMessage("  .pb off - Disable pattern building");
+        clientApi.ShowChatMessage("  .pb slot <1-5> - Switch to pattern slot");
+        clientApi.ShowChatMessage("  .pb list - Show available patterns");
+        clientApi.ShowChatMessage("  .pb reload - Reload patterns from disk");
         clientApi.ShowChatMessage("");
-        clientApi.ShowChatMessage("Walk forward while road building is enabled to place patterns");
+        clientApi.ShowChatMessage("Walk forward while pattern building is enabled to place patterns");
         return TextCommandResult.Success();
     }
 
@@ -252,7 +252,7 @@ public class BuilderRoadsModSystem : ModSystem
         roadBuildingEnabled = enabled;
 
         string status = roadBuildingEnabled ? "enabled" : "disabled";
-        clientApi.ShowChatMessage($"Road building mode {status}");
+        clientApi.ShowChatMessage($"Pattern building mode {status}");
 
         if (roadBuildingEnabled)
         {
@@ -284,11 +284,11 @@ public class BuilderRoadsModSystem : ModSystem
             }
             else
             {
-                Mod.Logger.Warning($"BuilderRoads: Failed to load block '{blockCode}'");
+                Mod.Logger.Warning($"PatternBuilder: Failed to load block '{blockCode}'");
             }
         }
 
-        Mod.Logger.Notification($"BuilderRoads: Cached {cachedCount} block IDs for pattern '{pattern.Name}'");
+        Mod.Logger.Notification($"PatternBuilder: Cached {cachedCount} block IDs for pattern '{pattern.Name}'");
     }
 
 
@@ -378,7 +378,7 @@ public class BuilderRoadsModSystem : ModSystem
 
         if (currentPattern == null)
         {
-            Mod.Logger.Warning("BuilderRoads: No pattern loaded, skipping placement");
+            Mod.Logger.Warning("PatternBuilder: No pattern loaded, skipping placement");
             return;
         }
 
@@ -400,7 +400,7 @@ public class BuilderRoadsModSystem : ModSystem
 
                 if (!blockIdCache.TryGetValue(blockCode, out int blockId))
                 {
-                    Mod.Logger.Warning($"BuilderRoads: Block '{blockCode}' not in cache");
+                    Mod.Logger.Warning($"PatternBuilder: Block '{blockCode}' not in cache");
                     continue;
                 }
 

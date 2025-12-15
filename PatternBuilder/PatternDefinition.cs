@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Vintagestory.API.Common;
 
-namespace BuilderRoads;
+namespace PatternBuilder;
 
 public class PatternDefinition
 {

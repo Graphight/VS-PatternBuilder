@@ -2,7 +2,7 @@ using ProtoBuf;
 using System.Collections.Generic;
 using Vintagestory.API.MathTools;
 
-namespace BuilderRoads;
+namespace PatternBuilder;
 
 [ProtoContract]
 public class PlacePatternMessage

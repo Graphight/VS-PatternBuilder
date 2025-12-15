@@ -1,4 +1,4 @@
-# BuilderRoads - Automated Pattern Placement for Vintage Story
+# PatternBuilder - Automated Pattern Placement for Vintage Story
 
 A Vintage Story mod that automates placement of repeating block patterns (roads, walls, tunnels) to reduce late-game construction tedium.
 
@@ -21,19 +21,19 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 ## Commands
 
 ```
-.road              Show command help
-.road toggle       Toggle road building on/off
-.road on/off       Enable/disable building mode
-.road list         Show available patterns
-.road slot <1-5>   Switch to pattern slot
-.road reload       Reload patterns from disk
+.pb              Show command help
+.pb toggle       Toggle pattern building on/off
+.pb on/off       Enable/disable building mode
+.pb list         Show available patterns
+.pb slot <1-5>   Switch to pattern slot
+.pb reload       Reload patterns from disk
 ```
 
 ## Pattern Files
 
 Patterns are stored in JSON files at:
 ```
-~/Library/Application Support/VintagestoryData/ModConfig/builderroads/patterns/
+~/Library/Application Support/VintagestoryData/ModConfig/patternbuilder/patterns/
 ```
 
 **File naming**: Pattern files must be named `slotN_name.json` where N is 1-5 (e.g., `slot1_road.json`, `slot2_path.json`).
@@ -63,7 +63,7 @@ Patterns are stored in JSON files at:
 ## Installation
 
 1. Download or build the mod
-2. Place `builderroads` folder in your VintagestoryData/Mods directory
+2. Place `patternbuilder` folder in your VintagestoryData/Mods directory
 3. Launch Vintage Story
 4. Default patterns will be created automatically on first run
 
@@ -74,16 +74,16 @@ Patterns are stored in JSON files at:
 ./build.sh
 ```
 
-The build script validates JSON files, compiles the mod, and packages it in `Releases/builderroads/`.
+The build script validates JSON files, compiles the mod, and packages it in `Releases/patternbuilder/`.
 
 **Deploy to Vintage Story (macOS)**:
 ```bash
-cp -r Releases/builderroads ~/Library/Application\ Support/VintagestoryData/Mods/
+cp -r Releases/patternbuilder ~/Library/Application\ Support/VintagestoryData/Mods/
 ```
 
 **Manual build**:
 ```bash
-dotnet build BuilderRoads/BuilderRoads.csproj -c Release
+dotnet build PatternBuilder/PatternBuilder.csproj -c Release
 dotnet clean  # Clean build artifacts
 ```
 
@@ -92,11 +92,11 @@ dotnet clean  # Clean build artifacts
 ## Usage
 
 1. Enter a creative world
-2. Type `.road on` to enable building mode
+2. Type `.pb on` to enable building mode
 3. Walk forward - patterns will be placed ahead of you
-4. Switch patterns with `.road slot <number>`
+4. Switch patterns with `.pb slot <number>`
 5. Edit pattern JSON files in the config directory
-6. Reload patterns with `.road reload`
+6. Reload patterns with `.pb reload`
 
 ## Known Issues
 
@@ -118,11 +118,11 @@ See [documentation/known_issues.md](documentation/known_issues.md) for full list
 - Ensure pattern files use valid block codes (e.g., `game:gravel-granite`)
 
 **Pattern edits not working**:
-- Use `.road reload` command to reload patterns from disk
+- Use `.pb reload` command to reload patterns from disk
 - Check pattern JSON syntax is valid
 - Verify file is named correctly (`slotN_name.json`)
 
-**Debug logs**: Check `VintagestoryData/Logs/` for detailed error messages. Mod messages are prefixed with `[BuilderRoads]`.
+**Debug logs**: Check `VintagestoryData/Logs/` for detailed error messages. Mod messages are prefixed with `[PatternBuilder]`.
 
 ## Development
 

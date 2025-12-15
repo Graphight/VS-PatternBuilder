@@ -4,7 +4,7 @@ using System.IO;
 using Newtonsoft.Json;
 using Vintagestory.API.Common;
 
-namespace BuilderRoads;
+namespace PatternBuilder;
 
 public class PatternLoader
 {
@@ -21,7 +21,7 @@ public class PatternLoader
         {
             if (!File.Exists(filePath))
             {
-                api.Logger.Warning($"BuilderRoads: Pattern file not found: {filePath}");
+                api.Logger.Warning($"PatternBuilder: Pattern file not found: {filePath}");
                 return null;
             }
 
@@ -30,22 +30,22 @@ public class PatternLoader
 
             if (pattern == null)
             {
-                api.Logger.Error($"BuilderRoads: Failed to deserialize pattern: {filePath}");
+                api.Logger.Error($"PatternBuilder: Failed to deserialize pattern: {filePath}");
                 return null;
             }
 
             if (!pattern.ValidatePattern())
             {
-                api.Logger.Error($"BuilderRoads: Pattern validation failed: {filePath}");
+                api.Logger.Error($"PatternBuilder: Pattern validation failed: {filePath}");
                 return null;
             }
 
-            api.Logger.Notification($"BuilderRoads: Loaded pattern '{pattern.Name}' from {Path.GetFileName(filePath)}");
+            api.Logger.Notification($"PatternBuilder: Loaded pattern '{pattern.Name}' from {Path.GetFileName(filePath)}");
             return pattern;
         }
         catch (Exception ex)
         {
-            api.Logger.Error($"BuilderRoads: Error loading pattern {filePath}: {ex.Message}");
+            api.Logger.Error($"PatternBuilder: Error loading pattern {filePath}: {ex.Message}");
             return null;
         }
     }
@@ -56,12 +56,12 @@ public class PatternLoader
 
         if (!Directory.Exists(directory))
         {
-            api.Logger.Warning($"BuilderRoads: Pattern directory not found: {directory}");
+            api.Logger.Warning($"PatternBuilder: Pattern directory not found: {directory}");
             return patterns;
         }
 
         var files = Directory.GetFiles(directory, "*.json");
-        api.Logger.Notification($"BuilderRoads: Found {files.Length} pattern files in {directory}");
+        api.Logger.Notification($"PatternBuilder: Found {files.Length} pattern files in {directory}");
 
         foreach (var file in files)
         {
@@ -73,12 +73,12 @@ public class PatternLoader
                 if (pattern != null)
                 {
                     patterns[slotNumber] = pattern;
-                    api.Logger.Notification($"BuilderRoads: Assigned '{pattern.Name}' to slot {slotNumber}");
+                    api.Logger.Notification($"PatternBuilder: Assigned '{pattern.Name}' to slot {slotNumber}");
                 }
             }
             else
             {
-                api.Logger.Warning($"BuilderRoads: Skipping file '{fileName}' - filename must start with 'slot' followed by number (e.g., slot1_road.json)");
+                api.Logger.Warning($"PatternBuilder: Skipping file '{fileName}' - filename must start with 'slot' followed by number (e.g., slot1_road.json)");
             }
         }
 
@@ -113,7 +113,7 @@ public class PatternLoader
         if (!Directory.Exists(directory))
         {
             Directory.CreateDirectory(directory);
-            api.Logger.Notification($"BuilderRoads: Created pattern directory: {directory}");
+            api.Logger.Notification($"PatternBuilder: Created pattern directory: {directory}");
         }
     }
 
@@ -205,15 +205,15 @@ public class PatternLoader
             {
                 var json = JsonConvert.SerializeObject(def.Pattern, Formatting.Indented);
                 File.WriteAllText(filePath, json);
-                api.Logger.Notification($"BuilderRoads: Created default pattern: {def.FileName}");
+                api.Logger.Notification($"PatternBuilder: Created default pattern: {def.FileName}");
             }
         }
 
         var readmePath = Path.Combine(directory, "README.txt");
         if (!File.Exists(readmePath))
         {
-            var readme = @"BuilderRoads Pattern Files
-===========================
+            var readme = @"PatternBuilder Pattern Files
+============================
 
 Pattern files use Vintage Story's recipe grid syntax for easy editing.
 
@@ -252,7 +252,7 @@ Tips:
 - Edit files while game is running, reload world to apply changes
 ";
             File.WriteAllText(readmePath, readme);
-            api.Logger.Notification("BuilderRoads: Created README.txt");
+            api.Logger.Notification("PatternBuilder: Created README.txt");
         }
     }
 }

@@ -8,4 +8,4 @@
 - Invalid block codes in patterns fail silently - should show in-game chat notification when a block doesn't exist or can't be placed
 
 ## Fixed
-- ~~The reload command (`.road reload`) crashes the game to desktop~~ - Fixed by clean DLL reinstall
+- ~~The reload command (`.pb reload`) crashes the game to desktop~~ - Fixed by clean DLL reinstall

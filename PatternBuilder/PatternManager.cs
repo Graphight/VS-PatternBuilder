@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Vintagestory.API.Common;
 
-namespace BuilderRoads;
+namespace PatternBuilder;
 
 public class PatternManager
 {
@@ -27,7 +27,7 @@ public class PatternManager
             patterns[kvp.Key] = kvp.Value;
         }
 
-        api.Logger.Notification($"BuilderRoads: Loaded {patterns.Count} patterns into manager");
+        api.Logger.Notification($"PatternBuilder: Loaded {patterns.Count} patterns into manager");
 
         if (!patterns.ContainsKey(currentSlot))
         {
@@ -39,18 +39,18 @@ public class PatternManager
     {
         if (slot < 1 || slot > 5)
         {
-            api.Logger.Warning($"BuilderRoads: Invalid slot number: {slot}");
+            api.Logger.Warning($"PatternBuilder: Invalid slot number: {slot}");
             return false;
         }
 
         if (!patterns.ContainsKey(slot))
         {
-            api.Logger.Warning($"BuilderRoads: No pattern in slot {slot}");
+            api.Logger.Warning($"PatternBuilder: No pattern in slot {slot}");
             return false;
         }
 
         currentSlot = slot;
-        api.Logger.Debug($"BuilderRoads: Switched to slot {slot}: {GetCurrentPattern().Name}");
+        api.Logger.Debug($"PatternBuilder: Switched to slot {slot}: {GetCurrentPattern().Name}");
         return true;
     }
 
@@ -61,7 +61,7 @@ public class PatternManager
             return pattern;
         }
 
-        api.Logger.Warning($"BuilderRoads: Current slot {currentSlot} has no pattern, using fallback");
+        api.Logger.Warning($"PatternBuilder: Current slot {currentSlot} has no pattern, using fallback");
         return fallbackPattern;
     }
 

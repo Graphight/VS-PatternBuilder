@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Vintagestory.API.Client;
 using Vintagestory.API.Server;
 using Vintagestory.API.Config;
@@ -22,15 +23,8 @@ public class BuilderRoadsModSystem : ModSystem
     private BlockPos lastPlacementPos;
     private long tickListenerId;
 
-    // Pattern definition: [Y layer][horizontal index]
-    private readonly string[,] roadPattern = {
-        {"game:soil-medium-normal", "game:soil-medium-normal", "game:soil-medium-normal"},  // Foundation
-        {"game:gravel-granite", "game:gravel-granite", "game:gravel-granite"}                // Surface
-    };
-
-    // Cached block IDs for performance
-    private int foundationBlockId;
-    private int surfaceBlockId;
+    private PatternDefinition currentPattern;
+    private Dictionary<string, int> blockIdCache;
 
     public override void Start(ICoreAPI api)
     {
@@ -46,40 +40,51 @@ public class BuilderRoadsModSystem : ModSystem
     {
         this.clientApi = api;
 
-        // Cache block IDs for performance
-        CacheBlockIds();
+        currentPattern = PatternDefinition.CreateHardcodedDefault();
+        if (!currentPattern.ValidatePattern())
+        {
+            Mod.Logger.Error("BuilderRoads: Failed to validate default pattern!");
+        }
 
-        // Register the hotkey: Ctrl+Shift+R
+        blockIdCache = new Dictionary<string, int>();
+        CacheBlockIdsForPattern(currentPattern);
+
         clientApi.Input.RegisterHotKey("toggleroadbuilder", "Toggle Road Builder",
             GlKeys.R, HotkeyType.CharacterControls,
             ctrlPressed: true, shiftPressed: true);
 
-        // Set up the hotkey handler
         clientApi.Input.SetHotKeyHandler("toggleroadbuilder", OnToggleRoadBuilder);
 
-        // Register position tracking tick listener (200ms = 0.2 seconds)
         tickListenerId = clientApi.Event.RegisterGameTickListener(OnGameTick, 200);
 
         Mod.Logger.Notification("BuilderRoads loaded - Press Ctrl+Shift+R to toggle");
     }
 
-    private void CacheBlockIds()
+    private void CacheBlockIdsForPattern(PatternDefinition pattern)
     {
-        var foundationBlock = clientApi.World.GetBlock(new AssetLocation("game:soil-medium-normal"));
-        var surfaceBlock = clientApi.World.GetBlock(new AssetLocation("game:gravel-granite"));
+        if (pattern == null || pattern.Blocks == null)
+            return;
 
-        if (foundationBlock == null || surfaceBlock == null)
+        int cachedCount = 0;
+        foreach (var kvp in pattern.Blocks)
         {
-            Mod.Logger.Error("BuilderRoads: Failed to load block types!");
-            foundationBlockId = 0;
-            surfaceBlockId = 0;
+            string blockCode = kvp.Value;
+            if (blockIdCache.ContainsKey(blockCode))
+                continue;
+
+            var block = clientApi.World.GetBlock(new AssetLocation(blockCode));
+            if (block != null)
+            {
+                blockIdCache[blockCode] = block.BlockId;
+                cachedCount++;
+            }
+            else
+            {
+                Mod.Logger.Warning($"BuilderRoads: Failed to load block '{blockCode}'");
+            }
         }
-        else
-        {
-            foundationBlockId = foundationBlock.BlockId;
-            surfaceBlockId = surfaceBlock.BlockId;
-            Mod.Logger.Notification($"BuilderRoads: Cached block IDs - Foundation: {foundationBlockId}, Surface: {surfaceBlockId}");
-        }
+
+        Mod.Logger.Notification($"BuilderRoads: Cached {cachedCount} block IDs for pattern '{pattern.Name}'");
     }
 
     private bool OnToggleRoadBuilder(KeyCombination key)
@@ -184,43 +189,44 @@ public class BuilderRoadsModSystem : ModSystem
 
     private void PlaceRoadPattern(BlockPos centerPos, CardinalDirection direction)
     {
-        if (foundationBlockId == 0 || surfaceBlockId == 0)
+        if (currentPattern == null)
         {
-            Mod.Logger.Warning("BuilderRoads: Block IDs not cached, skipping placement");
+            Mod.Logger.Warning("BuilderRoads: No pattern loaded, skipping placement");
             return;
         }
 
         var blockAccessor = clientApi.World.BlockAccessor;
-        int patternWidth = 3;
-        int patternHeight = 2;
+        int patternWidth = currentPattern.Width;
+        int patternHeight = currentPattern.Height;
 
-        // Offset Y so the top surface (gravel) is one block below player's feet
-        // Pattern: Y-2 = foundation, Y-1 = surface (walkable)
         int baseY = centerPos.Y - 2;
 
-        // Place blocks based on direction
         for (int y = 0; y < patternHeight; y++)
         {
-            int blockId = (y == 0) ? foundationBlockId : surfaceBlockId;
-
-            for (int i = 0; i < patternWidth; i++)
+            for (int x = 0; x < patternWidth; x++)
             {
-                int offset = i - 1;  // -1, 0, 1 (centered)
+                string blockCode = currentPattern.GetBlockAt(x, y);
+                if (blockCode == null || blockCode == "air")
+                    continue;
+
+                if (!blockIdCache.TryGetValue(blockCode, out int blockId))
+                {
+                    Mod.Logger.Warning($"BuilderRoads: Block '{blockCode}' not in cache");
+                    continue;
+                }
+
+                int offset = x - (patternWidth / 2);
                 BlockPos placePos;
 
-                // Determine block position based on movement direction
                 if (direction == CardinalDirection.North || direction == CardinalDirection.South)
                 {
-                    // Moving N/S, pattern extends along X axis
                     placePos = new BlockPos(centerPos.X + offset, baseY + y, centerPos.Z);
                 }
                 else
                 {
-                    // Moving E/W, pattern extends along Z axis
                     placePos = new BlockPos(centerPos.X, baseY + y, centerPos.Z + offset);
                 }
 
-                // Place the block
                 blockAccessor.SetBlock(blockId, placePos);
             }
         }

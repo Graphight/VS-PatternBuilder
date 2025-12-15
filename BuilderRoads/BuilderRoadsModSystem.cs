@@ -120,6 +120,10 @@ public class BuilderRoadsModSystem : ModSystem
     {
         api.ChatCommands.Create("road")
             .WithDescription("Road building commands")
+            .BeginSubCommand("help")
+                .WithDescription("Show command help")
+                .HandleWith(OnCommandHelp)
+            .EndSubCommand()
             .BeginSubCommand("toggle")
                 .WithDescription("Toggle road building mode on/off")
                 .HandleWith(OnCommandToggle)

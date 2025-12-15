@@ -184,12 +184,13 @@ public class PatternLoader
                 {
                     Name = "Stone Wall",
                     Description = "3-block tall cobblestone wall",
-                    Pattern = "C,C,C,P",
-                    Width = 1,
+                    Pattern = "CS,CP,C_,C_",
+                    Width = 2,
                     Height = 4,
                     Blocks = new Dictionary<char, string>
                     {
                         { 'C', "game:stonebricks-granite" },
+                        { 'S', "game:soil-medium-normal" },
                         { 'P', "player" }
                     }
                 }

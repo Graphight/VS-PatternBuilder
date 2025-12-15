@@ -19,6 +19,7 @@ public enum CardinalDirection
 public class BuilderRoadsModSystem : ModSystem
 {
     private ICoreClientAPI clientApi;
+    private ICoreServerAPI serverApi;
     private bool roadBuildingEnabled = false;
     private BlockPos lastPlacementPos;
     private long tickListenerId;
@@ -26,19 +27,59 @@ public class BuilderRoadsModSystem : ModSystem
     private PatternDefinition currentPattern;
     private Dictionary<string, int> blockIdCache;
 
+    private IClientNetworkChannel clientChannel;
+    private IServerNetworkChannel serverChannel;
+
+    private const string NetworkChannelId = "builderroads";
+
     public override void Start(ICoreAPI api)
     {
         base.Start(api);
+
+        api.Network
+            .RegisterChannel(NetworkChannelId)
+            .RegisterMessageType(typeof(PlacePatternMessage));
     }
 
     public override void StartServerSide(ICoreServerAPI api)
     {
-        // Server-side functionality not needed for Phase 1
+        serverApi = api;
+
+        serverChannel = api.Network.GetChannel(NetworkChannelId)
+            .SetMessageHandler<PlacePatternMessage>(OnClientPlacePattern);
+
+        Mod.Logger.Notification("BuilderRoads server-side loaded");
+    }
+
+    private void OnClientPlacePattern(IPlayer fromPlayer, PlacePatternMessage message)
+    {
+        if (message == null || message.BlockIds == null || message.Positions == null)
+            return;
+
+        if (message.BlockIds.Count != message.Positions.Count)
+        {
+            Mod.Logger.Warning($"BuilderRoads: Mismatched block counts from {fromPlayer.PlayerName}");
+            return;
+        }
+
+        var blockAccessor = serverApi.World.BlockAccessor;
+
+        for (int i = 0; i < message.BlockIds.Count; i++)
+        {
+            int blockId = message.BlockIds[i];
+            BlockPos pos = message.Positions[i].ToBlockPos();
+
+            blockAccessor.SetBlock(blockId, pos);
+        }
+
+        Mod.Logger.Debug($"BuilderRoads: Placed {message.BlockIds.Count} blocks for {fromPlayer.PlayerName}");
     }
 
     public override void StartClientSide(ICoreClientAPI api)
     {
         this.clientApi = api;
+
+        clientChannel = api.Network.GetChannel(NetworkChannelId);
 
         currentPattern = PatternDefinition.CreateHardcodedDefault();
         if (!currentPattern.ValidatePattern())
@@ -195,12 +236,13 @@ public class BuilderRoadsModSystem : ModSystem
             return;
         }
 
-        var blockAccessor = clientApi.World.BlockAccessor;
         int patternWidth = currentPattern.Width;
         int patternHeight = currentPattern.Height;
 
         int playerLayer = currentPattern.FindPlayerFeet();
         int baseY = centerPos.Y - playerLayer;
+
+        var message = new PlacePatternMessage();
 
         for (int y = 0; y < patternHeight; y++)
         {
@@ -228,9 +270,11 @@ public class BuilderRoadsModSystem : ModSystem
                     placePos = new BlockPos(centerPos.X, baseY + y, centerPos.Z + offset);
                 }
 
-                blockAccessor.SetBlock(blockId, placePos);
+                message.AddBlock(blockId, placePos);
             }
         }
+
+        clientChannel.SendPacket(message);
     }
 
     public override void Dispose()

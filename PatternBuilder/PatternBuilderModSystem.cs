@@ -160,6 +160,10 @@ public class PatternBuilderModSystem : ModSystem
                 .WithDescription("Reload patterns from JSON files")
                 .HandleWith(OnCommandReload)
             .EndSubCommand()
+            .BeginSubCommand("info")
+                .WithDescription("Show current pattern details")
+                .HandleWith(OnCommandInfo)
+            .EndSubCommand()
             .BeginSubCommand("slot")
                 .WithDescription($"Switch to pattern slot (1-{PatternManager.MaxSlots})")
                 .WithArgs(api.ChatCommands.Parsers.Int("slot"))
@@ -218,6 +222,25 @@ public class PatternBuilderModSystem : ModSystem
         return TextCommandResult.Success();
     }
 
+    private TextCommandResult OnCommandInfo(TextCommandCallingArgs args)
+    {
+        var pattern = patternManager.GetCurrentPattern();
+        if (pattern == null)
+        {
+            clientApi.ShowChatMessage("No pattern loaded");
+            return TextCommandResult.Error("No pattern");
+        }
+
+        int currentSlot = patternManager.GetCurrentSlot();
+        clientApi.ShowChatMessage($"Current Pattern [Slot {currentSlot}]:");
+        clientApi.ShowChatMessage($"  Name: {pattern.Name}");
+        clientApi.ShowChatMessage($"  Description: {pattern.Description}");
+        clientApi.ShowChatMessage($"  Dimensions: {pattern.Width}x{pattern.Height}");
+        clientApi.ShowChatMessage($"  Mode: {pattern.Mode ?? "adaptive"}");
+
+        return TextCommandResult.Success();
+    }
+
     private TextCommandResult OnCommandHelp(TextCommandCallingArgs args)
     {
         clientApi.ShowChatMessage("PatternBuilder Commands:");
@@ -227,6 +250,7 @@ public class PatternBuilderModSystem : ModSystem
         clientApi.ShowChatMessage("  .pb off - Disable pattern building");
         clientApi.ShowChatMessage("  .pb slot <X> - Switch to pattern at slot <X>");
         clientApi.ShowChatMessage("  .pb list - Show available patterns");
+        clientApi.ShowChatMessage("  .pb info - Show current pattern details");
         clientApi.ShowChatMessage("  .pb reload - Reload patterns from disk");
         clientApi.ShowChatMessage("");
         clientApi.ShowChatMessage("Walk forward while pattern building is enabled to place patterns");

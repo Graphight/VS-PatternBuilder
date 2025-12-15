@@ -36,6 +36,8 @@ Patterns are stored in JSON files at:
 ~/Library/Application Support/VintagestoryData/ModConfig/builderroads/patterns/
 ```
 
+**File naming**: Pattern files must be named `slotN_name.json` where N is 1-5 (e.g., `slot1_road.json`, `slot2_path.json`).
+
 ### Example Pattern
 
 ```json
@@ -67,11 +69,25 @@ Patterns are stored in JSON files at:
 
 ## Building from Source
 
+**Quick build**:
 ```bash
 ./build.sh
 ```
 
-See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed build instructions.
+The build script validates JSON files, compiles the mod, and packages it in `Releases/builderroads/`.
+
+**Deploy to Vintage Story (macOS)**:
+```bash
+cp -r Releases/builderroads ~/Library/Application\ Support/VintagestoryData/Mods/
+```
+
+**Manual build**:
+```bash
+dotnet build BuilderRoads/BuilderRoads.csproj -c Release
+dotnet clean  # Clean build artifacts
+```
+
+**Hot-reload workflow**: After building, reload your world in Vintage Story (don't restart the game) and code changes take effect immediately. Some changes (like ModSystem initialization) may require a full game restart.
 
 ## Usage
 
@@ -89,9 +105,28 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed build instructions.
 
 See [documentation/known_issues.md](documentation/known_issues.md) for full list and backlog.
 
+## Troubleshooting
+
+**Mod doesn't load**:
+- Check `modinfo.json` is valid JSON
+- Verify Vintage Story version compatibility (1.21.0+)
+- Check for compilation errors in build output
+
+**Blocks don't place**:
+- Verify you're in Creative mode (required for block placement)
+- Check Vintage Story console for block loading errors
+- Ensure pattern files use valid block codes (e.g., `game:gravel-granite`)
+
+**Pattern edits not working**:
+- Use `.road reload` command to reload patterns from disk
+- Check pattern JSON syntax is valid
+- Verify file is named correctly (`slotN_name.json`)
+
+**Debug logs**: Check `VintagestoryData/Logs/` for detailed error messages. Mod messages are prefixed with `[BuilderRoads]`.
+
 ## Development
 
-- Built for Vintage Story 1.21.1+
+- Built for Vintage Story 1.21.0+
 - Uses C# with VS Modding API
 - Hot-reload capable for rapid iteration
 

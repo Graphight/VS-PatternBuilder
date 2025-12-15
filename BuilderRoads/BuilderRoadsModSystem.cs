@@ -199,7 +199,8 @@ public class BuilderRoadsModSystem : ModSystem
         int patternWidth = currentPattern.Width;
         int patternHeight = currentPattern.Height;
 
-        int baseY = centerPos.Y - 2;
+        int playerLayer = currentPattern.FindPlayerFeet();
+        int baseY = centerPos.Y - playerLayer;
 
         for (int y = 0; y < patternHeight; y++)
         {

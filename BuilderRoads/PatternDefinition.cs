@@ -71,6 +71,23 @@ public class PatternDefinition
         return true;
     }
 
+    public int FindPlayerFeet()
+    {
+        if (parsedGrid == null)
+            ParsePattern();
+
+        for (int y = 0; y < Height; y++)
+        {
+            for (int x = 0; x < Width; x++)
+            {
+                if (parsedGrid[y, x] == 'P')
+                    return y;
+            }
+        }
+
+        return 0;
+    }
+
     public string GetBlockAt(int x, int y)
     {
         if (parsedGrid == null || y < 0 || y >= Height || x < 0 || x >= Width)
@@ -78,7 +95,7 @@ public class PatternDefinition
 
         char c = parsedGrid[y, x];
 
-        if (c == '_')
+        if (c == '_' || c == 'P')
             return "air";
 
         return Blocks.ContainsKey(c) ? Blocks[c] : null;
@@ -90,13 +107,14 @@ public class PatternDefinition
         {
             Name = "Default Road",
             Description = "3-wide gravel road with dirt foundation",
-            Pattern = "DDD,GGG",
+            Pattern = "DDD,GGG,_P_,___",
             Width = 3,
-            Height = 2,
+            Height = 4,
             Blocks = new Dictionary<char, string>
             {
                 { 'D', "game:soil-medium-normal" },
-                { 'G', "game:gravel-granite" }
+                { 'G', "game:gravel-granite" },
+                { 'P', "player" }
             }
         };
     }

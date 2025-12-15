@@ -5,7 +5,8 @@
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <OutputPath>bin\$(Configuration)\Mods\mod</OutputPath>
         <Nullable>enable</Nullable>
-        <RootNamespace>BuilderRoads</RootNamespace>
+        <AssemblyName>PatternBuilder</AssemblyName>
+        <RootNamespace>PatternBuilder</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

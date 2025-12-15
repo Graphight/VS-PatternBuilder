@@ -86,7 +86,7 @@ public class PatternBuilderModSystem : ModSystem
         patternManager = new PatternManager(api);
         patternLoader = new PatternLoader(api);
 
-        LoadPatterns();
+        LoadPatterns(createDefaults: true);
 
         blockIdCache = new Dictionary<string, int>();
         CacheBlockIdsForPattern(patternManager.GetCurrentPattern());
@@ -98,11 +98,14 @@ public class PatternBuilderModSystem : ModSystem
         Mod.Logger.Notification("PatternBuilder loaded - Use .pb help for commands");
     }
 
-    private void LoadPatterns()
+    private void LoadPatterns(bool createDefaults = false)
     {
         var configPath = Path.Combine(clientApi.GetOrCreateDataPath("ModConfig"), "patternbuilder", "patterns");
 
-        patternLoader.CreateDefaultPatterns(configPath);
+        if (createDefaults)
+        {
+            patternLoader.CreateDefaultPatterns(configPath);
+        }
 
         var loadedPatterns = patternLoader.LoadAllPatterns(configPath);
 
@@ -113,6 +116,19 @@ public class PatternBuilderModSystem : ModSystem
         foreach (var kvp in patternNames)
         {
             Mod.Logger.Notification($"  Slot {kvp.Key}: {kvp.Value}");
+        }
+
+        foreach (var pattern in loadedPatterns.Values)
+        {
+            var validationErrors = pattern.GetValidationErrors(clientApi);
+            if (validationErrors.Count > 0)
+            {
+                foreach (var error in validationErrors)
+                {
+                    Mod.Logger.Warning($"Pattern '{pattern.Name}': {error}");
+                }
+                clientApi.ShowChatMessage($"Pattern '{pattern.Name}' has issues - check logs or pattern file");
+            }
         }
     }
 

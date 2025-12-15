@@ -57,11 +57,15 @@ public class PatternDefinition
         if (!ParsePattern())
             return false;
 
+        bool hasPlayerMarker = false;
         for (int y = 0; y < Height; y++)
         {
             for (int x = 0; x < Width; x++)
             {
                 char c = parsedGrid[y, x];
+                if (c == 'P')
+                    hasPlayerMarker = true;
+
                 if (c != '_' && !Blocks.ContainsKey(c))
                 {
                     return false;
@@ -69,7 +73,53 @@ public class PatternDefinition
             }
         }
 
-        return true;
+        return hasPlayerMarker;
+    }
+
+    public List<string> GetValidationErrors(ICoreAPI api)
+    {
+        var errors = new List<string>();
+
+        if (!ParsePattern())
+        {
+            errors.Add("Pattern parsing failed - check dimensions match pattern string");
+            return errors;
+        }
+
+        bool hasPlayerMarker = false;
+        var invalidBlocks = new List<string>();
+
+        for (int y = 0; y < Height; y++)
+        {
+            for (int x = 0; x < Width; x++)
+            {
+                char c = parsedGrid[y, x];
+                if (c == 'P')
+                    hasPlayerMarker = true;
+
+                if (c != '_' && c != 'P' && Blocks.ContainsKey(c))
+                {
+                    string blockCode = Blocks[c];
+                    var block = api.World.GetBlock(new AssetLocation(blockCode));
+                    if (block == null)
+                    {
+                        invalidBlocks.Add($"'{c}' -> {blockCode}");
+                    }
+                }
+            }
+        }
+
+        if (!hasPlayerMarker)
+        {
+            errors.Add("Missing 'P' (player) marker - pattern needs player position");
+        }
+
+        if (invalidBlocks.Count > 0)
+        {
+            errors.Add($"Invalid block codes: {string.Join(", ", invalidBlocks)}");
+        }
+
+        return errors;
     }
 
     public int FindPlayerFeet()

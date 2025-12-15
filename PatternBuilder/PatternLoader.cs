@@ -45,6 +45,16 @@ public class PatternLoader
                 return null;
             }
 
+            var validationErrors = pattern.GetValidationErrors(api);
+            if (validationErrors.Count > 0)
+            {
+                api.Logger.Warning($"PatternBuilder: Pattern '{pattern.Name}' has validation warnings:");
+                foreach (var error in validationErrors)
+                {
+                    api.Logger.Warning($"  - {error}");
+                }
+            }
+
             api.Logger.Notification($"PatternBuilder: Loaded pattern '{pattern.Name}' from {Path.GetFileName(filePath)}");
             return pattern;
         }

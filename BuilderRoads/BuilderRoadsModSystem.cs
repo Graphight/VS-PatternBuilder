@@ -91,11 +91,11 @@ public class BuilderRoadsModSystem : ModSystem
         blockIdCache = new Dictionary<string, int>();
         CacheBlockIdsForPattern(patternManager.GetCurrentPattern());
 
-        RegisterHotkeys();
+        RegisterCommands(api);
 
         tickListenerId = clientApi.Event.RegisterGameTickListener(OnGameTick, 200);
 
-        Mod.Logger.Notification("BuilderRoads loaded - Press Ctrl+Shift+R to toggle, 1-5 to switch patterns");
+        Mod.Logger.Notification("BuilderRoads loaded - Use .road help for commands");
     }
 
     private void LoadPatterns()
@@ -116,43 +116,148 @@ public class BuilderRoadsModSystem : ModSystem
         }
     }
 
-    private void RegisterHotkeys()
+    private void RegisterCommands(ICoreClientAPI api)
     {
-        clientApi.Input.RegisterHotKey("toggleroadbuilder", "Toggle Road Builder",
-            GlKeys.R, HotkeyType.CharacterControls,
-            ctrlPressed: true, shiftPressed: true);
-
-        clientApi.Input.SetHotKeyHandler("toggleroadbuilder", OnToggleRoadBuilder);
-
-        for (int i = 1; i <= 5; i++)
-        {
-            int slot = i;
-            var keyCode = GlKeys.Number1 + (i - 1);
-
-            clientApi.Input.RegisterHotKey($"patternslot{slot}", $"Switch to Pattern Slot {slot}",
-                keyCode, HotkeyType.CharacterControls);
-
-            clientApi.Input.SetHotKeyHandler($"patternslot{slot}", (key) => OnSwitchPattern(slot));
-        }
+        api.ChatCommands.Create("road")
+            .WithDescription("Road building commands")
+            .BeginSubCommand("toggle")
+                .WithDescription("Toggle road building mode on/off")
+                .HandleWith(OnCommandToggle)
+            .EndSubCommand()
+            .BeginSubCommand("on")
+                .WithDescription("Enable road building mode")
+                .HandleWith(OnCommandOn)
+            .EndSubCommand()
+            .BeginSubCommand("off")
+                .WithDescription("Disable road building mode")
+                .HandleWith(OnCommandOff)
+            .EndSubCommand()
+            .BeginSubCommand("list")
+                .WithDescription("List available patterns")
+                .HandleWith(OnCommandList)
+            .EndSubCommand()
+            .BeginSubCommand("reload")
+                .WithDescription("Reload patterns from JSON files")
+                .HandleWith(OnCommandReload)
+            .EndSubCommand()
+            .BeginSubCommand("slot")
+                .WithDescription("Switch to pattern slot (1-5)")
+                .WithArgs(api.ChatCommands.Parsers.Int("slot"))
+                .HandleWith(OnCommandSlot)
+            .EndSubCommand()
+            .HandleWith(OnCommandHelp);
     }
 
-    private bool OnSwitchPattern(int slot)
+    private TextCommandResult OnCommandToggle(TextCommandCallingArgs args)
     {
+        ToggleRoadBuilding();
+        return TextCommandResult.Success();
+    }
+
+    private TextCommandResult OnCommandOn(TextCommandCallingArgs args)
+    {
+        SetRoadBuilding(true);
+        return TextCommandResult.Success();
+    }
+
+    private TextCommandResult OnCommandOff(TextCommandCallingArgs args)
+    {
+        SetRoadBuilding(false);
+        return TextCommandResult.Success();
+    }
+
+    private TextCommandResult OnCommandList(TextCommandCallingArgs args)
+    {
+        var patternNames = patternManager.GetAllPatternNames();
+        var currentSlot = patternManager.GetCurrentSlot();
+
+        if (patternNames.Count == 0)
+        {
+            clientApi.ShowChatMessage("No patterns available");
+            return TextCommandResult.Success();
+        }
+
+        clientApi.ShowChatMessage("Available patterns:");
+        for (int i = 1; i <= 5; i++)
+        {
+            if (patternNames.TryGetValue(i, out string name))
+            {
+                var active = i == currentSlot ? " (active)" : "";
+                clientApi.ShowChatMessage($"  [{i}] {name}{active}");
+            }
+        }
+
+        return TextCommandResult.Success();
+    }
+
+    private TextCommandResult OnCommandReload(TextCommandCallingArgs args)
+    {
+        LoadPatterns();
+        CacheBlockIdsForPattern(patternManager.GetCurrentPattern());
+        clientApi.ShowChatMessage("Patterns reloaded from disk");
+        return TextCommandResult.Success();
+    }
+
+    private TextCommandResult OnCommandHelp(TextCommandCallingArgs args)
+    {
+        clientApi.ShowChatMessage("BuilderRoads Commands:");
+        clientApi.ShowChatMessage("  .road toggle - Toggle road building on/off");
+        clientApi.ShowChatMessage("  .road on - Enable road building");
+        clientApi.ShowChatMessage("  .road off - Disable road building");
+        clientApi.ShowChatMessage("  .road slot <1-5> - Switch to pattern slot");
+        clientApi.ShowChatMessage("  .road list - Show available patterns");
+        clientApi.ShowChatMessage("  .road reload - Reload patterns from disk");
+        clientApi.ShowChatMessage("");
+        clientApi.ShowChatMessage("Walk forward while road building is enabled to place patterns");
+        return TextCommandResult.Success();
+    }
+
+    private TextCommandResult OnCommandSlot(TextCommandCallingArgs args)
+    {
+        int slot = (int)args.Parsers[0].GetValue();
+
+        if (slot < 1 || slot > 5)
+        {
+            clientApi.ShowChatMessage("Slot must be between 1 and 5");
+            return TextCommandResult.Error("Invalid slot number");
+        }
+
         if (!patternManager.HasPatternInSlot(slot))
         {
             clientApi.ShowChatMessage($"No pattern in slot {slot}");
-            return true;
+            return TextCommandResult.Error("Pattern not found");
         }
 
         if (patternManager.SwitchToSlot(slot))
         {
             var pattern = patternManager.GetCurrentPattern();
             CacheBlockIdsForPattern(pattern);
-
             clientApi.ShowChatMessage($"Switched to: {pattern.Name}");
         }
 
-        return true;
+        return TextCommandResult.Success();
+    }
+
+    private void ToggleRoadBuilding()
+    {
+        SetRoadBuilding(!roadBuildingEnabled);
+    }
+
+    private void SetRoadBuilding(bool enabled)
+    {
+        roadBuildingEnabled = enabled;
+
+        string status = roadBuildingEnabled ? "enabled" : "disabled";
+        clientApi.ShowChatMessage($"Road building mode {status}");
+
+        if (roadBuildingEnabled)
+        {
+            var player = clientApi.World.Player;
+            if (player?.Entity != null)
+            {
+                lastPlacementPos = player.Entity.Pos.AsBlockPos;
+            }
+        }
     }
 
     private void CacheBlockIdsForPattern(PatternDefinition pattern)
@@ -182,25 +287,6 @@ public class BuilderRoadsModSystem : ModSystem
         Mod.Logger.Notification($"BuilderRoads: Cached {cachedCount} block IDs for pattern '{pattern.Name}'");
     }
 
-    private bool OnToggleRoadBuilder(KeyCombination key)
-    {
-        roadBuildingEnabled = !roadBuildingEnabled;
-
-        string status = roadBuildingEnabled ? "enabled" : "disabled";
-        var player = clientApi.World.Player;
-        player?.ShowChatNotification($"Road building mode {status}");
-
-        // Reset last placement position when toggling on
-        if (roadBuildingEnabled)
-        {
-            if (player?.Entity != null)
-            {
-                lastPlacementPos = player.Entity.Pos.AsBlockPos;
-            }
-        }
-
-        return true;
-    }
 
     private void OnGameTick(float dt)
     {

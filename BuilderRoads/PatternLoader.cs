@@ -184,8 +184,8 @@ public class PatternLoader
                 {
                     Name = "Stone Wall",
                     Description = "3-block tall cobblestone wall",
-                    Pattern = "CS,CP,C_,C_",
-                    Width = 2,
+                    Pattern = "CSS,CP_,C__,C__",
+                    Width = 3,
                     Height = 4,
                     Blocks = new Dictionary<char, string>
                     {

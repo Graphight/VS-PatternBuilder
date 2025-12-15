@@ -22,6 +22,16 @@ public class BuilderRoadsModSystem : ModSystem
     private BlockPos lastPlacementPos;
     private long tickListenerId;
 
+    // Pattern definition: [Y layer][horizontal index]
+    private readonly string[,] roadPattern = {
+        {"game:soil-medium-normal", "game:soil-medium-normal", "game:soil-medium-normal"},  // Foundation
+        {"game:gravel-granite", "game:gravel-granite", "game:gravel-granite"}                // Surface
+    };
+
+    // Cached block IDs for performance
+    private int foundationBlockId;
+    private int surfaceBlockId;
+
     public override void Start(ICoreAPI api)
     {
         base.Start(api);
@@ -36,6 +46,9 @@ public class BuilderRoadsModSystem : ModSystem
     {
         this.clientApi = api;
 
+        // Cache block IDs for performance
+        CacheBlockIds();
+
         // Register the hotkey: Ctrl+Shift+R
         clientApi.Input.RegisterHotKey("toggleroadbuilder", "Toggle Road Builder",
             GlKeys.R, HotkeyType.CharacterControls,
@@ -48,6 +61,25 @@ public class BuilderRoadsModSystem : ModSystem
         tickListenerId = clientApi.Event.RegisterGameTickListener(OnGameTick, 200);
 
         Mod.Logger.Notification("BuilderRoads loaded - Press Ctrl+Shift+R to toggle");
+    }
+
+    private void CacheBlockIds()
+    {
+        var foundationBlock = clientApi.World.GetBlock(new AssetLocation("game:soil-medium-normal"));
+        var surfaceBlock = clientApi.World.GetBlock(new AssetLocation("game:gravel-granite"));
+
+        if (foundationBlock == null || surfaceBlock == null)
+        {
+            Mod.Logger.Error("BuilderRoads: Failed to load block types!");
+            foundationBlockId = 0;
+            surfaceBlockId = 0;
+        }
+        else
+        {
+            foundationBlockId = foundationBlock.BlockId;
+            surfaceBlockId = surfaceBlock.BlockId;
+            Mod.Logger.Notification($"BuilderRoads: Cached block IDs - Foundation: {foundationBlockId}, Surface: {surfaceBlockId}");
+        }
     }
 
     private bool OnToggleRoadBuilder(KeyCombination key)
@@ -100,7 +132,11 @@ public class BuilderRoadsModSystem : ModSystem
         if (distance > 0.8)
         {
             CardinalDirection direction = CalculateDirection(lastPlacementPos, currentPos);
-            player.ShowChatNotification($"Moved {distance:F2} blocks {direction} - would place road here!");
+
+            // Place the road pattern at current position
+            PlaceRoadPattern(currentPos, direction);
+
+            player.ShowChatNotification($"Placed road segment {direction}");
             lastPlacementPos = currentPos.Copy();
         }
     }
@@ -128,6 +164,50 @@ public class BuilderRoadsModSystem : ModSystem
         {
             // Moving primarily along Z axis
             return dz > 0 ? CardinalDirection.South : CardinalDirection.North;
+        }
+    }
+
+    private void PlaceRoadPattern(BlockPos centerPos, CardinalDirection direction)
+    {
+        if (foundationBlockId == 0 || surfaceBlockId == 0)
+        {
+            Mod.Logger.Warning("BuilderRoads: Block IDs not cached, skipping placement");
+            return;
+        }
+
+        var blockAccessor = clientApi.World.BlockAccessor;
+        int patternWidth = 3;
+        int patternHeight = 2;
+
+        // Offset Y so the top surface (gravel) is one block below player's feet
+        // Pattern: Y-2 = foundation, Y-1 = surface (walkable)
+        int baseY = centerPos.Y - 2;
+
+        // Place blocks based on direction
+        for (int y = 0; y < patternHeight; y++)
+        {
+            int blockId = (y == 0) ? foundationBlockId : surfaceBlockId;
+
+            for (int i = 0; i < patternWidth; i++)
+            {
+                int offset = i - 1;  // -1, 0, 1 (centered)
+                BlockPos placePos;
+
+                // Determine block position based on movement direction
+                if (direction == CardinalDirection.North || direction == CardinalDirection.South)
+                {
+                    // Moving N/S, pattern extends along X axis
+                    placePos = new BlockPos(centerPos.X + offset, baseY + y, centerPos.Z);
+                }
+                else
+                {
+                    // Moving E/W, pattern extends along Z axis
+                    placePos = new BlockPos(centerPos.X, baseY + y, centerPos.Z + offset);
+                }
+
+                // Place the block
+                blockAccessor.SetBlock(blockId, placePos);
+            }
         }
     }
 

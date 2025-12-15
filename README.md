@@ -40,8 +40,15 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 ## Pattern Files
 
 Patterns are stored in JSON files at:
+
+**Mac OS**:
 ```
 ~/Library/Application Support/VintagestoryData/ModConfig/patternbuilder/patterns/
+```
+
+**Windows**:
+```
+%APPDATA%\VintagestoryData\ModConfig\patternbuilder\patterns\
 ```
 
 **File naming**: Pattern files must be named `slotN_name.json` where N is 1-50 (e.g., `slot1_road.json`, `slot2_path.json`).
@@ -80,15 +87,29 @@ Patterns are stored in JSON files at:
 ## Building from Source
 
 **Quick build**:
+
+**Mac OS / Linux**:
 ```bash
 ./build.sh
 ```
 
+**Windows**:
+```powershell
+build.sh
+```
+
 The build script validates JSON files, compiles the mod, and packages it in `Releases/patternbuilder/`.
 
-**Deploy to Vintage Story (macOS)**:
+**Deploy to Vintage Story**:
+
+**Mac OS**:
 ```bash
 cp -r Releases/patternbuilder ~/Library/Application\ Support/VintagestoryData/Mods/
+```
+
+**Windows**:
+```powershell
+Copy-Item -Recurse -Force Releases/patternbuilder $env:APPDATA\VintagestoryData\Mods\
 ```
 
 **Manual build**:

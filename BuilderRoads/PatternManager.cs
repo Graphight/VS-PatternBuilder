@@ -1,0 +1,115 @@
+using System.Collections.Generic;
+using Vintagestory.API.Common;
+
+namespace BuilderRoads;
+
+public class PatternManager
+{
+    private readonly ICoreAPI api;
+    private readonly Dictionary<int, PatternDefinition> patterns;
+    private int currentSlot;
+    private PatternDefinition fallbackPattern;
+
+    public PatternManager(ICoreAPI api)
+    {
+        this.api = api;
+        this.patterns = new Dictionary<int, PatternDefinition>();
+        this.currentSlot = 1;
+        this.fallbackPattern = PatternDefinition.CreateHardcodedDefault();
+    }
+
+    public void LoadPatterns(Dictionary<int, PatternDefinition> loadedPatterns)
+    {
+        patterns.Clear();
+
+        foreach (var kvp in loadedPatterns)
+        {
+            patterns[kvp.Key] = kvp.Value;
+        }
+
+        api.Logger.Notification($"BuilderRoads: Loaded {patterns.Count} patterns into manager");
+
+        if (!patterns.ContainsKey(currentSlot))
+        {
+            currentSlot = FindFirstAvailableSlot();
+        }
+    }
+
+    public bool SwitchToSlot(int slot)
+    {
+        if (slot < 1 || slot > 5)
+        {
+            api.Logger.Warning($"BuilderRoads: Invalid slot number: {slot}");
+            return false;
+        }
+
+        if (!patterns.ContainsKey(slot))
+        {
+            api.Logger.Warning($"BuilderRoads: No pattern in slot {slot}");
+            return false;
+        }
+
+        currentSlot = slot;
+        api.Logger.Debug($"BuilderRoads: Switched to slot {slot}: {GetCurrentPattern().Name}");
+        return true;
+    }
+
+    public PatternDefinition GetCurrentPattern()
+    {
+        if (patterns.TryGetValue(currentSlot, out var pattern))
+        {
+            return pattern;
+        }
+
+        api.Logger.Warning($"BuilderRoads: Current slot {currentSlot} has no pattern, using fallback");
+        return fallbackPattern;
+    }
+
+    public int GetCurrentSlot()
+    {
+        return currentSlot;
+    }
+
+    public bool HasPatternInSlot(int slot)
+    {
+        return patterns.ContainsKey(slot);
+    }
+
+    public string GetPatternNameInSlot(int slot)
+    {
+        if (patterns.TryGetValue(slot, out var pattern))
+        {
+            return pattern.Name;
+        }
+
+        return null;
+    }
+
+    private int FindFirstAvailableSlot()
+    {
+        for (int i = 1; i <= 5; i++)
+        {
+            if (patterns.ContainsKey(i))
+            {
+                return i;
+            }
+        }
+
+        return 1;
+    }
+
+    public Dictionary<int, string> GetAllPatternNames()
+    {
+        var names = new Dictionary<int, string>();
+
+        for (int i = 1; i <= 5; i++)
+        {
+            if (patterns.TryGetValue(i, out var pattern))
+            {
+                names[i] = pattern.Name;
+            }
+        }
+
+        return names;
+    }
+}

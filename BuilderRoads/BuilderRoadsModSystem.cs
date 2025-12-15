@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Vintagestory.API.Client;
 using Vintagestory.API.Server;
 using Vintagestory.API.Config;
@@ -24,7 +25,8 @@ public class BuilderRoadsModSystem : ModSystem
     private BlockPos lastPlacementPos;
     private long tickListenerId;
 
-    private PatternDefinition currentPattern;
+    private PatternManager patternManager;
+    private PatternLoader patternLoader;
     private Dictionary<string, int> blockIdCache;
 
     private IClientNetworkChannel clientChannel;
@@ -81,24 +83,76 @@ public class BuilderRoadsModSystem : ModSystem
 
         clientChannel = api.Network.GetChannel(NetworkChannelId);
 
-        currentPattern = PatternDefinition.CreateHardcodedDefault();
-        if (!currentPattern.ValidatePattern())
-        {
-            Mod.Logger.Error("BuilderRoads: Failed to validate default pattern!");
-        }
+        patternManager = new PatternManager(api);
+        patternLoader = new PatternLoader(api);
+
+        LoadPatterns();
 
         blockIdCache = new Dictionary<string, int>();
-        CacheBlockIdsForPattern(currentPattern);
+        CacheBlockIdsForPattern(patternManager.GetCurrentPattern());
 
+        RegisterHotkeys();
+
+        tickListenerId = clientApi.Event.RegisterGameTickListener(OnGameTick, 200);
+
+        Mod.Logger.Notification("BuilderRoads loaded - Press Ctrl+Shift+R to toggle, 1-5 to switch patterns");
+    }
+
+    private void LoadPatterns()
+    {
+        var configPath = Path.Combine(clientApi.GetOrCreateDataPath("ModConfig"), "builderroads", "patterns");
+
+        patternLoader.CreateDefaultPatterns(configPath);
+
+        var loadedPatterns = patternLoader.LoadAllPatterns(configPath);
+
+        patternManager.LoadPatterns(loadedPatterns);
+
+        var patternNames = patternManager.GetAllPatternNames();
+        Mod.Logger.Notification($"BuilderRoads: Available patterns:");
+        foreach (var kvp in patternNames)
+        {
+            Mod.Logger.Notification($"  Slot {kvp.Key}: {kvp.Value}");
+        }
+    }
+
+    private void RegisterHotkeys()
+    {
         clientApi.Input.RegisterHotKey("toggleroadbuilder", "Toggle Road Builder",
             GlKeys.R, HotkeyType.CharacterControls,
             ctrlPressed: true, shiftPressed: true);
 
         clientApi.Input.SetHotKeyHandler("toggleroadbuilder", OnToggleRoadBuilder);
 
-        tickListenerId = clientApi.Event.RegisterGameTickListener(OnGameTick, 200);
+        for (int i = 1; i <= 5; i++)
+        {
+            int slot = i;
+            var keyCode = GlKeys.Number1 + (i - 1);
 
-        Mod.Logger.Notification("BuilderRoads loaded - Press Ctrl+Shift+R to toggle");
+            clientApi.Input.RegisterHotKey($"patternslot{slot}", $"Switch to Pattern Slot {slot}",
+                keyCode, HotkeyType.CharacterControls);
+
+            clientApi.Input.SetHotKeyHandler($"patternslot{slot}", (key) => OnSwitchPattern(slot));
+        }
+    }
+
+    private bool OnSwitchPattern(int slot)
+    {
+        if (!patternManager.HasPatternInSlot(slot))
+        {
+            clientApi.ShowChatMessage($"No pattern in slot {slot}");
+            return true;
+        }
+
+        if (patternManager.SwitchToSlot(slot))
+        {
+            var pattern = patternManager.GetCurrentPattern();
+            CacheBlockIdsForPattern(pattern);
+
+            clientApi.ShowChatMessage($"Switched to: {pattern.Name}");
+        }
+
+        return true;
     }
 
     private void CacheBlockIdsForPattern(PatternDefinition pattern)
@@ -230,6 +284,8 @@ public class BuilderRoadsModSystem : ModSystem
 
     private void PlaceRoadPattern(BlockPos centerPos, CardinalDirection direction)
     {
+        var currentPattern = patternManager.GetCurrentPattern();
+
         if (currentPattern == null)
         {
             Mod.Logger.Warning("BuilderRoads: No pattern loaded, skipping placement");

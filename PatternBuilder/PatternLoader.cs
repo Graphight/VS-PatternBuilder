@@ -34,6 +34,11 @@ public class PatternLoader
                 return null;
             }
 
+            if (string.IsNullOrEmpty(pattern.Mode))
+            {
+                pattern.Mode = "adaptive";
+            }
+
             if (!pattern.ValidatePattern())
             {
                 api.Logger.Error($"PatternBuilder: Pattern validation failed: {filePath}");
@@ -205,6 +210,7 @@ public class PatternLoader
                     Pattern = "SSSSS,S_P_S,S___S,S___S,SSSSS",
                     Width = 5,
                     Height = 5,
+                    Mode = "carve",
                     Blocks = new Dictionary<char, string>
                     {
                         { 'S', "game:stonebricks-granite" },
@@ -245,6 +251,7 @@ Pattern Format:
   ""pattern"": ""DDD,GGG,_P_,___"",
   ""width"": 3,
   ""height"": 4,
+  ""mode"": ""adaptive"",
   ""blocks"": {
     ""D"": ""game:soil-medium-normal"",
     ""G"": ""game:gravel-granite"",
@@ -258,6 +265,10 @@ Pattern String:
 - '_' = air/empty
 - 'P' = player's feet position (required, marks where player stands)
 
+Mode:
+- ""adaptive"" (default): Adapts to terrain, only places solid blocks, preserves existing terrain
+- ""carve"": Carves through terrain, places air blocks to clear space (for tunnels)
+
 Block Codes:
 - Use standard VS AssetLocation format: ""game:blockname""
 - Find block codes in VS creative menu or wiki
@@ -266,6 +277,7 @@ Tips:
 - Player marker 'P' determines vertical offset
 - Pattern width must match each row's character count
 - Pattern height must match number of comma-separated rows
+- Use mode=""carve"" for tunnels that need to cut through terrain
 - Edit files while game is running, reload world to apply changes
 ";
             File.WriteAllText(readmePath, readme);

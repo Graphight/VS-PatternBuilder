@@ -288,7 +288,22 @@ public class PatternBuilderModSystem : ModSystem
             }
         }
 
-        Mod.Logger.Notification($"PatternBuilder: Cached {cachedCount} block IDs for pattern '{pattern.Name}'");
+        if (pattern.Mode == "carve" && !blockIdCache.ContainsKey("air"))
+        {
+            var airBlock = clientApi.World.GetBlock(new AssetLocation("game:air"));
+            if (airBlock != null)
+            {
+                blockIdCache["air"] = airBlock.BlockId;
+                cachedCount++;
+                Mod.Logger.Notification($"PatternBuilder: Cached air block for carve mode (ID: {airBlock.BlockId})");
+            }
+            else
+            {
+                Mod.Logger.Warning("PatternBuilder: Failed to get air block for carve mode!");
+            }
+        }
+
+        Mod.Logger.Notification($"PatternBuilder: Cached {cachedCount} block IDs for pattern '{pattern.Name}' (Mode: {pattern.Mode})");
     }
 
 
@@ -390,12 +405,17 @@ public class PatternBuilderModSystem : ModSystem
 
         var message = new PlacePatternMessage();
 
+        bool isCarveMode = currentPattern.Mode == "carve";
+
         for (int y = 0; y < patternHeight; y++)
         {
             for (int x = 0; x < patternWidth; x++)
             {
                 string blockCode = currentPattern.GetBlockAt(x, y);
-                if (blockCode == null || blockCode == "air")
+                if (blockCode == null)
+                    continue;
+
+                if (blockCode == "air" && !isCarveMode)
                     continue;
 
                 if (!blockIdCache.TryGetValue(blockCode, out int blockId))

@@ -11,6 +11,7 @@ public class PatternDefinition
     public string Pattern { get; set; }
     public int Width { get; set; }
     public int Height { get; set; }
+    public string Mode { get; set; }
     public Dictionary<char, string> Blocks { get; set; }
 
     private char[,] parsedGrid;

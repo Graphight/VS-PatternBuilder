@@ -133,8 +133,11 @@ public class BuilderRoadsModSystem : ModSystem
         {
             CardinalDirection direction = CalculateDirection(lastPlacementPos, currentPos);
 
-            // Place the road pattern at current position
-            PlaceRoadPattern(currentPos, direction);
+            // Offset placement ahead of player (1 block in movement direction)
+            BlockPos placePos = OffsetPositionForward(currentPos, direction, 1);
+
+            // Place the road pattern ahead of player
+            PlaceRoadPattern(placePos, direction);
 
             player.ShowChatNotification($"Placed road segment {direction}");
             lastPlacementPos = currentPos.Copy();
@@ -165,6 +168,18 @@ public class BuilderRoadsModSystem : ModSystem
             // Moving primarily along Z axis
             return dz > 0 ? CardinalDirection.South : CardinalDirection.North;
         }
+    }
+
+    private BlockPos OffsetPositionForward(BlockPos pos, CardinalDirection direction, int blocks)
+    {
+        return direction switch
+        {
+            CardinalDirection.North => new BlockPos(pos.X, pos.Y, pos.Z - blocks),
+            CardinalDirection.South => new BlockPos(pos.X, pos.Y, pos.Z + blocks),
+            CardinalDirection.East => new BlockPos(pos.X + blocks, pos.Y, pos.Z),
+            CardinalDirection.West => new BlockPos(pos.X - blocks, pos.Y, pos.Z),
+            _ => pos.Copy()
+        };
     }
 
     private void PlaceRoadPattern(BlockPos centerPos, CardinalDirection direction)

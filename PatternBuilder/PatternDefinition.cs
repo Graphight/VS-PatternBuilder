@@ -100,6 +100,10 @@ public class PatternDefinition
                 if (c != '_' && c != 'P' && Blocks.ContainsKey(c))
                 {
                     string blockCode = Blocks[c];
+
+                    if (blockCode.Contains("*"))
+                        continue;
+
                     var block = api.World.GetBlock(new AssetLocation(blockCode));
                     if (block == null)
                     {

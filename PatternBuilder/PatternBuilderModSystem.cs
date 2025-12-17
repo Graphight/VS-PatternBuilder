@@ -21,7 +21,7 @@ public class PatternBuilderModSystem : ModSystem
 {
     private ICoreClientAPI clientApi;
     private ICoreServerAPI serverApi;
-    private bool roadBuildingEnabled = false;
+    private bool buildingEnabled = false;
     private BlockPos lastPlacementPos;
     private long tickListenerId;
 
@@ -31,6 +31,9 @@ public class PatternBuilderModSystem : ModSystem
 
     private IClientNetworkChannel clientChannel;
     private IServerNetworkChannel serverChannel;
+
+    private int cachedInventoryChecks = 0;
+    private const int InventoryCheckCacheSize = 5;
 
     private const string NetworkChannelId = "patternbuilder";
 
@@ -70,11 +73,9 @@ public class PatternBuilderModSystem : ModSystem
         {
             if (!InventoryHelper.ConsumeBlocksFromInventory(fromPlayer, message.RequiredPatterns, serverApi))
             {
-                Mod.Logger.Notification($"PatternBuilder: Server-side consumption failed for {fromPlayer.PlayerName}");
+                Mod.Logger.Warning($"PatternBuilder: Server-side consumption failed for {fromPlayer.PlayerName}");
                 return;
             }
-
-            Mod.Logger.Notification($"PatternBuilder: Consumed blocks from {fromPlayer.PlayerName}'s inventory");
         }
 
         var blockAccessor = serverApi.World.BlockAccessor;
@@ -193,13 +194,13 @@ public class PatternBuilderModSystem : ModSystem
 
     private TextCommandResult OnCommandOn(TextCommandCallingArgs args)
     {
-        SetRoadBuilding(true);
+        SetBuilding(true);
         return TextCommandResult.Success();
     }
 
     private TextCommandResult OnCommandOff(TextCommandCallingArgs args)
     {
-        SetRoadBuilding(false);
+        SetBuilding(false);
         return TextCommandResult.Success();
     }
 
@@ -298,17 +299,17 @@ public class PatternBuilderModSystem : ModSystem
 
     private void ToggleRoadBuilding()
     {
-        SetRoadBuilding(!roadBuildingEnabled);
+        SetBuilding(!buildingEnabled);
     }
 
-    private void SetRoadBuilding(bool enabled)
+    private void SetBuilding(bool enabled)
     {
-        roadBuildingEnabled = enabled;
+        buildingEnabled = enabled;
 
-        string status = roadBuildingEnabled ? "enabled" : "disabled";
+        string status = buildingEnabled ? "enabled" : "disabled";
         clientApi.ShowChatMessage($"Pattern building mode {status}");
 
-        if (roadBuildingEnabled)
+        if (buildingEnabled)
         {
             var player = clientApi.World.Player;
             if (player?.Entity != null)
@@ -364,7 +365,7 @@ public class PatternBuilderModSystem : ModSystem
     private void OnGameTick(float dt)
     {
         // Only track position if road building is enabled
-        if (!roadBuildingEnabled)
+        if (!buildingEnabled)
         {
             return;
         }
@@ -462,42 +463,42 @@ public class PatternBuilderModSystem : ModSystem
 
         if (!isCreative)
         {
-            var requiredPatterns = InventoryHelper.CountBlocksInPattern(currentPattern);
-            var availableBlocks = InventoryHelper.CountBlocksInInventory(player, clientApi);
-
-            Mod.Logger.Notification($"PatternBuilder DEBUG: Required patterns:");
-            foreach (var kvp in requiredPatterns)
+            if (cachedInventoryChecks <= 0)
             {
-                Mod.Logger.Notification($"  Pattern '{kvp.Key}': need {kvp.Value}");
-            }
+                var requiredPatterns = InventoryHelper.CountBlocksInPattern(currentPattern);
+                var availableBlocks = InventoryHelper.CountBlocksInInventory(player, clientApi);
 
-            Mod.Logger.Notification($"PatternBuilder DEBUG: Available blocks:");
-            foreach (var kvp in availableBlocks)
-            {
-                var block = clientApi.World.GetBlock(kvp.Key);
-                Mod.Logger.Notification($"  BlockID {kvp.Key} ({block?.Code}): have {kvp.Value}");
-            }
-
-            if (!InventoryHelper.HasSufficientBlocks(requiredPatterns, availableBlocks, clientApi))
-            {
-                var missingBlocks = InventoryHelper.GetMissingBlocksDescription(requiredPatterns, availableBlocks, clientApi);
-
-                if (missingBlocks.Count > 0)
+                if (!InventoryHelper.HasSufficientBlocks(requiredPatterns, availableBlocks, clientApi))
                 {
-                    string missingList = string.Join(", ", missingBlocks);
-                    clientApi.ShowChatMessage($"Insufficient materials! Need: {missingList}");
-                    Mod.Logger.Notification($"PatternBuilder: Placement blocked - missing materials: {missingList}");
+                    var missingBlocks = InventoryHelper.GetMissingBlocksDescription(requiredPatterns, availableBlocks, clientApi);
+
+                    if (missingBlocks.Count > 0)
+                    {
+                        string missingList = string.Join(", ", missingBlocks);
+                        clientApi.ShowChatMessage($"Insufficient materials! Need: {missingList}");
+                        clientApi.ShowChatMessage("Pattern building auto-disabled. Use '.pb on' to re-enable.");
+                        buildingEnabled = false;
+                        Mod.Logger.Notification($"PatternBuilder: Auto-disabled - missing materials: {missingList}");
+                    }
+
+                    return;
                 }
 
-                return;
+                resolvedBlockIds = InventoryHelper.ResolvePatternToBlockIds(requiredPatterns, availableBlocks, clientApi);
+                cachedInventoryChecks = InventoryCheckCacheSize;
             }
-
-            resolvedBlockIds = InventoryHelper.ResolvePatternToBlockIds(requiredPatterns, availableBlocks, clientApi);
-            Mod.Logger.Notification("PatternBuilder: Survival mode - sufficient materials available");
+            else
+            {
+                var requiredPatterns = InventoryHelper.CountBlocksInPattern(currentPattern);
+                var availableBlocks = InventoryHelper.CountBlocksInInventory(player, clientApi);
+                resolvedBlockIds = InventoryHelper.ResolvePatternToBlockIds(requiredPatterns, availableBlocks, clientApi);
+                cachedInventoryChecks--;
+                Mod.Logger.Debug($"PatternBuilder: Using cached check ({cachedInventoryChecks} remaining)");
+            }
         }
         else
         {
-            Mod.Logger.Notification("PatternBuilder: Creative mode - skipping inventory check");
+            Mod.Logger.Debug("PatternBuilder: Creative mode - skipping inventory check");
         }
 
         int patternWidth = currentPattern.Width;

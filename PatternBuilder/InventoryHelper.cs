@@ -111,11 +111,6 @@ public static class InventoryHelper
             return blockCounts;
         }
 
-        int totalSlots = 0;
-        int totalEmpty = 0;
-        int totalBlocks = 0;
-        int totalItems = 0;
-
         string[] inventoriesToScan = { "hotbar", "backpack" };
 
         foreach (var invName in inventoriesToScan)
@@ -124,42 +119,26 @@ public static class InventoryHelper
             if (inventory == null)
                 continue;
 
-            api?.Logger.Notification($"InventoryHelper: Scanning inventory: {inventory.ClassName}");
-
             foreach (var slot in inventory)
             {
-                totalSlots++;
-
                 if (slot == null || slot.Empty)
-                {
-                    totalEmpty++;
                     continue;
-                }
 
                 if (slot.Itemstack == null)
                     continue;
 
                 if (slot.Itemstack.Block != null)
                 {
-                    totalBlocks++;
                     int blockId = slot.Itemstack.Block.BlockId;
                     int stackSize = slot.StackSize;
-
-                    api?.Logger.Notification($"InventoryHelper: Found block: ID={blockId}, Code={slot.Itemstack.Block.Code}, Stack={stackSize}");
 
                     if (blockCounts.ContainsKey(blockId))
                         blockCounts[blockId] += stackSize;
                     else
                         blockCounts[blockId] = stackSize;
                 }
-                else if (slot.Itemstack.Item != null)
-                {
-                    totalItems++;
-                }
             }
         }
-
-        api?.Logger.Notification($"InventoryHelper: Total scanned {totalSlots} slots - {totalEmpty} empty, {totalBlocks} blocks, {totalItems} items");
 
         return blockCounts;
     }

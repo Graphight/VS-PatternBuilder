@@ -9,6 +9,55 @@ namespace PatternBuilder;
 
 public static class InventoryHelper
 {
+    public static bool MatchesBlockPattern(int blockId, string pattern, ICoreAPI api)
+    {
+        var block = api.World.GetBlock(blockId);
+        if (block == null)
+            return false;
+
+        string blockCode = block.Code.ToString();
+
+        if (!pattern.Contains("*"))
+            return blockCode == pattern;
+
+        string regexPattern = "^" + pattern.Replace("*", ".*") + "$";
+        return System.Text.RegularExpressions.Regex.IsMatch(blockCode, regexPattern);
+    }
+
+    public static Dictionary<string, int> ResolvePatternToBlockIds(
+        Dictionary<string, int> requiredPatterns,
+        Dictionary<int, int> availableBlocks,
+        ICoreAPI api)
+    {
+        var resolved = new Dictionary<string, int>();
+
+        foreach (var kvp in requiredPatterns)
+        {
+            string pattern = kvp.Key;
+
+            if (!pattern.Contains("*"))
+            {
+                var block = api.World.GetBlock(new AssetLocation(pattern));
+                if (block != null)
+                {
+                    resolved[pattern] = block.BlockId;
+                }
+                continue;
+            }
+
+            foreach (var blockKvp in availableBlocks)
+            {
+                if (MatchesBlockPattern(blockKvp.Key, pattern, api))
+                {
+                    resolved[pattern] = blockKvp.Key;
+                    break;
+                }
+            }
+        }
+
+        return resolved;
+    }
+
     public static bool IsCreativeMode(IPlayer player)
     {
         if (player?.WorldData == null)
@@ -17,13 +66,11 @@ public static class InventoryHelper
         return player.WorldData.CurrentGameMode == EnumGameMode.Creative;
     }
 
-    public static Dictionary<int, int> CountBlocksInPattern(
-        PatternDefinition pattern,
-        Dictionary<string, int> blockIdCache)
+    public static Dictionary<string, int> CountBlocksInPattern(PatternDefinition pattern)
     {
-        var blockCounts = new Dictionary<int, int>();
+        var blockCounts = new Dictionary<string, int>();
 
-        if (pattern == null || blockIdCache == null)
+        if (pattern == null || pattern.Blocks == null)
             return blockCounts;
 
         int patternWidth = pattern.Width;
@@ -44,13 +91,10 @@ public static class InventoryHelper
                 if (blockCode == "air")
                     continue;
 
-                if (!blockIdCache.TryGetValue(blockCode, out int blockId))
-                    continue;
-
-                if (blockCounts.ContainsKey(blockId))
-                    blockCounts[blockId]++;
+                if (blockCounts.ContainsKey(blockCode))
+                    blockCounts[blockCode]++;
                 else
-                    blockCounts[blockId] = 1;
+                    blockCounts[blockCode] = 1;
             }
         }
 
@@ -72,8 +116,11 @@ public static class InventoryHelper
         int totalBlocks = 0;
         int totalItems = 0;
 
-        foreach (var inventory in player.InventoryManager.Inventories.Values)
+        string[] inventoriesToScan = { "hotbar", "backpack" };
+
+        foreach (var invName in inventoriesToScan)
         {
+            var inventory = player.InventoryManager.GetOwnInventory(invName);
             if (inventory == null)
                 continue;
 
@@ -118,16 +165,25 @@ public static class InventoryHelper
     }
 
     public static bool HasSufficientBlocks(
-        Dictionary<int, int> required,
-        Dictionary<int, int> available)
+        Dictionary<string, int> requiredPatterns,
+        Dictionary<int, int> availableBlocks,
+        ICoreAPI api)
     {
-        foreach (var kvp in required)
+        foreach (var kvp in requiredPatterns)
         {
-            int blockId = kvp.Key;
+            string pattern = kvp.Key;
             int requiredCount = kvp.Value;
-            int availableCount = available.GetValueOrDefault(blockId, 0);
 
-            if (availableCount < requiredCount)
+            int totalAvailable = 0;
+            foreach (var blockKvp in availableBlocks)
+            {
+                if (MatchesBlockPattern(blockKvp.Key, pattern, api))
+                {
+                    totalAvailable += blockKvp.Value;
+                }
+            }
+
+            if (totalAvailable < requiredCount)
                 return false;
         }
 
@@ -135,24 +191,40 @@ public static class InventoryHelper
     }
 
     public static List<string> GetMissingBlocksDescription(
-        Dictionary<int, int> required,
-        Dictionary<int, int> available,
+        Dictionary<string, int> requiredPatterns,
+        Dictionary<int, int> availableBlocks,
         ICoreAPI api)
     {
         var missing = new List<string>();
 
-        foreach (var kvp in required)
+        foreach (var kvp in requiredPatterns)
         {
-            int blockId = kvp.Key;
+            string pattern = kvp.Key;
             int requiredCount = kvp.Value;
-            int availableCount = available.GetValueOrDefault(blockId, 0);
 
-            if (availableCount < requiredCount)
+            int totalAvailable = 0;
+            foreach (var blockKvp in availableBlocks)
             {
-                int shortage = requiredCount - availableCount;
-                var block = api.World.GetBlock(blockId);
-                string blockName = block?.GetPlacedBlockName(api.World, new BlockPos(0, 0, 0)) ?? $"Block #{blockId}";
-                missing.Add($"{shortage} {blockName}");
+                if (MatchesBlockPattern(blockKvp.Key, pattern, api))
+                {
+                    totalAvailable += blockKvp.Value;
+                }
+            }
+
+            if (totalAvailable < requiredCount)
+            {
+                int shortage = requiredCount - totalAvailable;
+                string displayName = pattern.Contains("*") ? pattern : pattern;
+
+                var block = api.World.GetBlock(new AssetLocation(pattern.Replace("*", "any")));
+                if (block != null)
+                {
+                    displayName = block.GetPlacedBlockName(api.World, new BlockPos(0, 0, 0));
+                    if (pattern.Contains("*"))
+                        displayName += " (any variant)";
+                }
+
+                missing.Add($"{shortage} {displayName}");
             }
         }
 
@@ -161,39 +233,45 @@ public static class InventoryHelper
 
     public static bool ConsumeBlocksFromInventory(
         IPlayer player,
-        Dictionary<int, int> toConsume,
+        Dictionary<string, int> toConsumePatterns,
         ICoreAPI api)
     {
         if (player?.InventoryManager == null)
             return false;
 
-        var inventory = player.InventoryManager.GetOwnInventory(GlobalConstants.characterInvClassName);
-        if (inventory == null)
-            return false;
+        string[] inventoriesToScan = { "hotbar", "backpack" };
 
-        var consumedCounts = new Dictionary<int, int>();
-
-        foreach (var kvp in toConsume)
+        foreach (var kvp in toConsumePatterns)
         {
-            int blockId = kvp.Key;
+            string pattern = kvp.Key;
             int neededCount = kvp.Value;
             int consumedSoFar = 0;
 
-            foreach (var slot in inventory)
+            foreach (var invName in inventoriesToScan)
             {
-                if (slot?.Itemstack?.Block == null || slot.Empty)
+                var inventory = player.InventoryManager.GetOwnInventory(invName);
+                if (inventory == null)
                     continue;
 
-                if (slot.Itemstack.Block.BlockId != blockId)
-                    continue;
+                foreach (var slot in inventory)
+                {
+                    if (slot?.Itemstack?.Block == null || slot.Empty)
+                        continue;
 
-                int availableInSlot = slot.StackSize;
-                int toTakeFromSlot = Math.Min(availableInSlot, neededCount - consumedSoFar);
+                    if (!MatchesBlockPattern(slot.Itemstack.Block.BlockId, pattern, api))
+                        continue;
 
-                slot.TakeOut(toTakeFromSlot);
-                slot.MarkDirty();
+                    int availableInSlot = slot.StackSize;
+                    int toTakeFromSlot = Math.Min(availableInSlot, neededCount - consumedSoFar);
 
-                consumedSoFar += toTakeFromSlot;
+                    slot.TakeOut(toTakeFromSlot);
+                    slot.MarkDirty();
+
+                    consumedSoFar += toTakeFromSlot;
+
+                    if (consumedSoFar >= neededCount)
+                        break;
+                }
 
                 if (consumedSoFar >= neededCount)
                     break;
@@ -203,8 +281,6 @@ public static class InventoryHelper
             {
                 return false;
             }
-
-            consumedCounts[blockId] = consumedSoFar;
         }
 
         return true;

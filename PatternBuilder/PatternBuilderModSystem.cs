@@ -445,17 +445,17 @@ public class PatternBuilderModSystem : ModSystem
         }
 
         bool isCreative = InventoryHelper.IsCreativeMode(player);
+        Dictionary<string, int> resolvedBlockIds = null;
 
         if (!isCreative)
         {
-            var requiredBlocks = InventoryHelper.CountBlocksInPattern(currentPattern, blockIdCache);
+            var requiredPatterns = InventoryHelper.CountBlocksInPattern(currentPattern);
             var availableBlocks = InventoryHelper.CountBlocksInInventory(player, clientApi);
 
-            Mod.Logger.Notification($"PatternBuilder DEBUG: Required blocks:");
-            foreach (var kvp in requiredBlocks)
+            Mod.Logger.Notification($"PatternBuilder DEBUG: Required patterns:");
+            foreach (var kvp in requiredPatterns)
             {
-                var block = clientApi.World.GetBlock(kvp.Key);
-                Mod.Logger.Notification($"  BlockID {kvp.Key} ({block?.Code}): need {kvp.Value}");
+                Mod.Logger.Notification($"  Pattern '{kvp.Key}': need {kvp.Value}");
             }
 
             Mod.Logger.Notification($"PatternBuilder DEBUG: Available blocks:");
@@ -465,9 +465,9 @@ public class PatternBuilderModSystem : ModSystem
                 Mod.Logger.Notification($"  BlockID {kvp.Key} ({block?.Code}): have {kvp.Value}");
             }
 
-            if (!InventoryHelper.HasSufficientBlocks(requiredBlocks, availableBlocks))
+            if (!InventoryHelper.HasSufficientBlocks(requiredPatterns, availableBlocks, clientApi))
             {
-                var missingBlocks = InventoryHelper.GetMissingBlocksDescription(requiredBlocks, availableBlocks, clientApi);
+                var missingBlocks = InventoryHelper.GetMissingBlocksDescription(requiredPatterns, availableBlocks, clientApi);
 
                 if (missingBlocks.Count > 0)
                 {
@@ -479,6 +479,7 @@ public class PatternBuilderModSystem : ModSystem
                 return;
             }
 
+            resolvedBlockIds = InventoryHelper.ResolvePatternToBlockIds(requiredPatterns, availableBlocks, clientApi);
             Mod.Logger.Notification("PatternBuilder: Survival mode - sufficient materials available");
         }
         else
@@ -507,9 +508,14 @@ public class PatternBuilderModSystem : ModSystem
                 if (blockCode == "air" && !isCarveMode)
                     continue;
 
-                if (!blockIdCache.TryGetValue(blockCode, out int blockId))
+                int blockId;
+                if (resolvedBlockIds != null && resolvedBlockIds.TryGetValue(blockCode, out int resolvedId))
                 {
-                    Mod.Logger.Warning($"PatternBuilder: Block '{blockCode}' not in cache");
+                    blockId = resolvedId;
+                }
+                else if (!blockIdCache.TryGetValue(blockCode, out blockId))
+                {
+                    Mod.Logger.Warning($"PatternBuilder: Block '{blockCode}' not in cache or resolved");
                     continue;
                 }
 

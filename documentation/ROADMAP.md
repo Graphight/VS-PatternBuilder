@@ -1,18 +1,21 @@
 # Roadmap
 
+## Completed Features
+
+### Phase 4 Tier 1: Survival Mode Support (2025-12-16)
+**Inventory consumption - survival gameplay enabled!**
+
+-  Check player inventory for required blocks before placement
+-  Consume items from inventory during placement (server-side authoritative)
+-  Handle insufficient materials gracefully (auto-disable, clear messages)
+-  Wildcard pattern support (`game:soil-*` matches any variant)
+-  Smart consumption (only consumes blocks that actually get placed)
+-  Performance optimizations (inventory caching, optimized scanning)
+-  Creative mode bypass
+
+---
+
 ## Phase 4 Development Priorities
-
-### Tier 1: Critical for Survival/Multiplayer (Blocks Adoption)
-**Without these, the mod is creative-mode only and unusable on most servers.**
-
-1. **Inventory consumption** (survival mode support)
-   - Check player inventory for required blocks before placement
-   - Consume items from inventory during placement
-   - Handle insufficient materials gracefully (stop building, notify player)
-   - Block-by-block consumption (not pattern-by-pattern)
-   - Consider hotbar vs full inventory search
-   - **Impact**: Enables survival gameplay and balanced multiplayer use
-   - **Complexity**: Medium - inventory API, item matching, edge cases
 
 ### Tier 2: Core Usability (Major UX Improvements)
 **These make the mod work in real-world scenarios, not just flat creative builds.**
@@ -76,7 +79,7 @@
 **Polish and power-user features that enhance but don't fundamentally change usage.**
 
 5. **Corner detection** (automatic pattern rotation on direction changes)
-   - Detect when player changes cardinal direction (N→E, E→S, etc.)
+   - Detect when player changes cardinal direction (N=>E, E=>S, etc.)
    - Place special corner patterns at turn points
    - Corner pattern slots (e.g., slot 51-54 for NE, SE, SW, NW corners)
    - Fallback to regular pattern if corner pattern missing
@@ -115,39 +118,40 @@
 ### Recommended Order
 Based on dependencies and impact:
 
-**Sprint 1**: Inventory consumption (Tier 1)
-- Unblocks survival/multiplayer use
-- No dependencies on other features
-- Test on survival worlds and multiplayer servers
+** Item 1 COMPLETE**: Inventory consumption (Tier 1)
+-  Survival/multiplayer use enabled
+-  Tested with wildcard patterns and smart consumption
 
-**Sprint 2**: 3D patterns (Tier 2)
+**Item 2**: 3D patterns (Tier 2)
 - Fundamental pattern capability
 - Relatively simple implementation (1-2 hours)
 - Backwards compatible with existing 2D patterns
 - Enables creative designs immediately
 
-**Sprint 3**: Pattern preview (Tier 2)
+**Item 3**: Pattern preview (Tier 2)
 - Provides visual feedback for testing terrain following
 - Must support 3D pattern slice preview
 - Helps validate inventory consumption and 3D patterns
 
-**Sprint 4**: Terrain following (Tier 2)
+**Item 4**: Terrain following (Tier 2)
 - Benefits from pattern preview for testing
 - Works with both 2D and 3D patterns
 - Requires extensive testing on varied terrain
 
-**Sprint 5+**: Corners, then in-game editor (Tier 3)
+**Item 5+**: Corners, then in-game editor (Tier 3)
 - Only tackle after core features are stable
 - In-game editor must support 3D pattern creation
 - Consider user feedback before prioritizing
 
 ### Key Questions to Answer
 
-**Inventory Consumption**:
-- How to handle patterns with multiple block types? (consume proportionally)
-- What happens mid-pattern if inventory runs out? (stop gracefully, don't place partial)
-- Should it check entire pattern upfront or per-block? (per-block for better UX)
-- Creative mode bypass or always consume? (bypass in creative)
+** Inventory Consumption** (ANSWERED):
+-  How to handle patterns with multiple block types? => Track each block type separately, consume all
+-  What happens if inventory runs out? => Auto-disable building, show clear message
+-  Check entire pattern upfront or per-block? => Check upfront for better UX, cache for 5 placements
+-  Creative mode bypass? => Yes, creative mode skips all inventory checks
+-  Wildcard support? => Yes, added `game:soil-*` pattern matching
+-  Duplicate consumption on existing blocks? => Fixed with smart consumption (check before placing)
 
 **3D Patterns**:
 - Backwards compatibility: fallback to `Pattern` string if `Slices` absent? (yes)

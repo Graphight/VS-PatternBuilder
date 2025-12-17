@@ -4,13 +4,15 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 
 ## Status
 
-**Phase 1**: Complete - Basic road placement prototype
+**Phase 1**: ✅ Complete - Basic road placement prototype
 
-**Phase 2**: Complete - Multi-pattern system with JSON configs
+**Phase 2**: ✅ Complete - Multi-pattern system with JSON configs
 
-**Phase 3**: In Progress - Advanced features (carve mode, validation, performance)
+**Phase 3**: ✅ Complete - Advanced features (carve mode, validation, performance)
 
-**Phase 4**: Planned - In-game pattern editor
+**Phase 4 Tier 1**: ✅ Complete - Survival mode support with inventory consumption
+
+**Phase 4 Tier 2+**: Planned - Preview mode, 3D patterns, in-game editor
 
 ## Features
 
@@ -19,6 +21,9 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 - **Movement-based placement**: Walk to build - patterns follow your movement
 - **Directional awareness**: Patterns orient based on movement direction (N/S/E/W)
 - **Adaptive & Carve modes**: Patterns can mold to terrain or carve through it
+- **Survival mode support**: Consumes blocks from inventory, works in both creative and survival
+- **Wildcard patterns**: Match any block variant (e.g., `game:soil-*` matches all soil types)
+- **Smart consumption**: Only uses materials for blocks that actually get placed
 - **Hot-reload patterns**: Edit patterns while game is running
 - **Pattern validation**: Automatic validation with helpful error messages
 - **Persistent placement**: Blocks remain after world reload
@@ -53,8 +58,9 @@ Patterns are stored in JSON files at:
 
 **File naming**: Pattern files must be named `slotN_name.json` where N is 1-50 (e.g., `slot1_road.json`, `slot2_path.json`).
 
-### Example Pattern
+### Example Patterns
 
+**Basic pattern with exact block types**:
 ```json
 {
   "Name": "Default Road",
@@ -71,10 +77,29 @@ Patterns are stored in JSON files at:
 }
 ```
 
+**Wildcard pattern (survival-friendly)**:
+```json
+{
+  "Name": "Flexible Road",
+  "Description": "Works with ANY soil and gravel variants",
+  "Pattern": "SSS,GGG,_P_,___",
+  "Width": 3,
+  "Height": 4,
+  "Mode": "adaptive",
+  "Blocks": {
+    "S": "game:soil-*",
+    "G": "game:gravel-*",
+    "P": "player"
+  }
+}
+```
+
+**Pattern syntax**:
 - Pattern uses comma-separated Y-layers (bottom to top)
 - Each character maps to a block code
 - `_` = air/empty
 - `P` = player feet position (required for Y-offset)
+- `*` = wildcard (matches any variant, e.g., `game:soil-*`)
 - `Mode` = "adaptive" (molds to terrain) or "carve" (cuts through terrain)
 
 ## Installation
@@ -122,12 +147,24 @@ dotnet clean  # Clean build artifacts
 
 ## Usage
 
-1. Enter a creative world
+**Creative Mode**:
+1. Type `.pb on` to enable building mode
+2. Walk forward - patterns will be placed ahead of you
+3. Switch patterns with `.pb slot <number>`
+4. No materials consumed from inventory
+
+**Survival Mode**:
+1. Gather blocks needed for your pattern (check with `.pb info`)
 2. Type `.pb on` to enable building mode
-3. Walk forward - patterns will be placed ahead of you
-4. Switch patterns with `.pb slot <number>`
-5. Edit pattern JSON files in the config directory
-6. Reload patterns with `.pb reload`
+3. Walk forward - blocks consumed from inventory as you build
+4. Use wildcard patterns (`game:soil-*`) for flexibility
+5. Auto-disables when out of materials (shows clear message)
+
+**Tips**:
+- Edit pattern JSON files in the config directory
+- Reload patterns with `.pb reload` after editing
+- Use `.pb info` to see current pattern details and material requirements
+- Walking over existing patterns won't waste materials
 
 ## Pattern Modes
 
@@ -151,7 +188,7 @@ Set mode in pattern JSON:
 
 ## Known Issues
 
-See [documentation/known_issues.md](documentation/known_issues.md) for active issues and backlog.
+See [documentation/ROADMAP.md](documentation/ROADMAP.md) for active issues and backlog.
 
 ## Troubleshooting
 
@@ -161,9 +198,10 @@ See [documentation/known_issues.md](documentation/known_issues.md) for active is
 - Check for compilation errors in build output
 
 **Blocks don't place**:
-- Verify you're in Creative mode (required for block placement)
 - Check Vintage Story console for block loading errors
 - Ensure pattern files use valid block codes (e.g., `game:gravel-granite`)
+- In survival mode: Verify you have required materials in inventory
+- Use `.pb info` to see what materials are needed
 
 **Pattern edits not working**:
 - Use `.pb reload` command to reload patterns from disk
@@ -175,8 +213,6 @@ See [documentation/known_issues.md](documentation/known_issues.md) for active is
 ## Development
 
 - Built for Vintage Story 1.21.0+
-- Uses C# with VS Modding API
-- Hot-reload capable for rapid iteration
 
 ## License
 

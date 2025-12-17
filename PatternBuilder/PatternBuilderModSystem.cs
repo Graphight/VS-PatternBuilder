@@ -437,6 +437,55 @@ public class PatternBuilderModSystem : ModSystem
             return;
         }
 
+        var player = clientApi.World.Player;
+        if (player == null)
+        {
+            Mod.Logger.Warning("PatternBuilder: Player not found, skipping placement");
+            return;
+        }
+
+        bool isCreative = InventoryHelper.IsCreativeMode(player);
+
+        if (!isCreative)
+        {
+            var requiredBlocks = InventoryHelper.CountBlocksInPattern(currentPattern, blockIdCache);
+            var availableBlocks = InventoryHelper.CountBlocksInInventory(player, clientApi);
+
+            Mod.Logger.Notification($"PatternBuilder DEBUG: Required blocks:");
+            foreach (var kvp in requiredBlocks)
+            {
+                var block = clientApi.World.GetBlock(kvp.Key);
+                Mod.Logger.Notification($"  BlockID {kvp.Key} ({block?.Code}): need {kvp.Value}");
+            }
+
+            Mod.Logger.Notification($"PatternBuilder DEBUG: Available blocks:");
+            foreach (var kvp in availableBlocks)
+            {
+                var block = clientApi.World.GetBlock(kvp.Key);
+                Mod.Logger.Notification($"  BlockID {kvp.Key} ({block?.Code}): have {kvp.Value}");
+            }
+
+            if (!InventoryHelper.HasSufficientBlocks(requiredBlocks, availableBlocks))
+            {
+                var missingBlocks = InventoryHelper.GetMissingBlocksDescription(requiredBlocks, availableBlocks, clientApi);
+
+                if (missingBlocks.Count > 0)
+                {
+                    string missingList = string.Join(", ", missingBlocks);
+                    clientApi.ShowChatMessage($"Insufficient materials! Need: {missingList}");
+                    Mod.Logger.Notification($"PatternBuilder: Placement blocked - missing materials: {missingList}");
+                }
+
+                return;
+            }
+
+            Mod.Logger.Notification("PatternBuilder: Survival mode - sufficient materials available");
+        }
+        else
+        {
+            Mod.Logger.Notification("PatternBuilder: Creative mode - skipping inventory check");
+        }
+
         int patternWidth = currentPattern.Width;
         int patternHeight = currentPattern.Height;
 

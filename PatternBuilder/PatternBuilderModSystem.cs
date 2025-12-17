@@ -510,12 +510,12 @@ public class PatternBuilderModSystem : ModSystem
         var message = new PlacePatternMessage
         {
             PlayerId = player.PlayerUID,
-            RequiredPatterns = !isCreative && resolvedBlockIds != null
-                ? InventoryHelper.CountBlocksInPattern(currentPattern)
-                : new Dictionary<string, int>()
+            RequiredPatterns = new Dictionary<string, int>()
         };
 
         bool isCarveMode = currentPattern.Mode == "carve";
+        var blockAccessor = clientApi.World.BlockAccessor;
+        var actualBlocksToPlace = new Dictionary<string, int>();
 
         for (int y = 0; y < patternHeight; y++)
         {
@@ -551,8 +551,27 @@ public class PatternBuilderModSystem : ModSystem
                     placePos = new BlockPos(centerPos.X, baseY + y, centerPos.Z + offset);
                 }
 
+                var existingBlock = blockAccessor.GetBlock(placePos);
+                if (existingBlock != null && existingBlock.BlockId == blockId)
+                {
+                    continue;
+                }
+
                 message.AddBlock(blockId, placePos);
+
+                if (!isCreative)
+                {
+                    if (actualBlocksToPlace.ContainsKey(blockCode))
+                        actualBlocksToPlace[blockCode]++;
+                    else
+                        actualBlocksToPlace[blockCode] = 1;
+                }
             }
+        }
+
+        if (!isCreative)
+        {
+            message.RequiredPatterns = actualBlocksToPlace;
         }
 
         clientChannel.SendPacket(message);

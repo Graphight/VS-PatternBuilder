@@ -64,6 +64,19 @@ public class PatternBuilderModSystem : ModSystem
             return;
         }
 
+        bool isCreative = InventoryHelper.IsCreativeMode(fromPlayer);
+
+        if (!isCreative && message.RequiredPatterns != null && message.RequiredPatterns.Count > 0)
+        {
+            if (!InventoryHelper.ConsumeBlocksFromInventory(fromPlayer, message.RequiredPatterns, serverApi))
+            {
+                Mod.Logger.Notification($"PatternBuilder: Server-side consumption failed for {fromPlayer.PlayerName}");
+                return;
+            }
+
+            Mod.Logger.Notification($"PatternBuilder: Consumed blocks from {fromPlayer.PlayerName}'s inventory");
+        }
+
         var blockAccessor = serverApi.World.BlockAccessor;
 
         for (int i = 0; i < message.BlockIds.Count; i++)
@@ -493,7 +506,13 @@ public class PatternBuilderModSystem : ModSystem
         int playerLayer = currentPattern.FindPlayerFeet();
         int baseY = centerPos.Y - playerLayer;
 
-        var message = new PlacePatternMessage();
+        var message = new PlacePatternMessage
+        {
+            PlayerId = player.PlayerUID,
+            RequiredPatterns = !isCreative && resolvedBlockIds != null
+                ? InventoryHelper.CountBlocksInPattern(currentPattern)
+                : new Dictionary<string, int>()
+        };
 
         bool isCarveMode = currentPattern.Mode == "carve";
 

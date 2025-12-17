@@ -13,10 +13,18 @@ public class PlacePatternMessage
     [ProtoMember(2)]
     public List<SerializedBlockPos> Positions { get; set; }
 
+    [ProtoMember(3)]
+    public string PlayerId { get; set; }
+
+    [ProtoMember(4)]
+    public Dictionary<string, int> RequiredPatterns { get; set; }
+
     public PlacePatternMessage()
     {
         BlockIds = new List<int>();
         Positions = new List<SerializedBlockPos>();
+        PlayerId = "";
+        RequiredPatterns = new Dictionary<string, int>();
     }
 
     public void AddBlock(int blockId, BlockPos pos)

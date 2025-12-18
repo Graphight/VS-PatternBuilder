@@ -10,6 +10,7 @@ public class PatternManager
     private readonly ICoreAPI api;
     private readonly Dictionary<int, PatternDefinition> patterns;
     private int currentSlot;
+    private int currentSliceIndex;
     private PatternDefinition fallbackPattern;
 
     public PatternManager(ICoreAPI api)
@@ -52,6 +53,7 @@ public class PatternManager
         }
 
         currentSlot = slot;
+        ResetSliceIndex();
         api.Logger.Debug($"PatternBuilder: Switched to slot {slot}: {GetCurrentPattern().Name}");
         return true;
     }
@@ -113,5 +115,40 @@ public class PatternManager
         }
 
         return names;
+    }
+
+    public int GetCurrentSliceIndex()
+    {
+        return currentSliceIndex;
+    }
+
+    public void IncrementSliceIndex()
+    {
+        var pattern = GetCurrentPattern();
+        int depth = pattern.GetDepth();
+
+        if (depth > 0)
+        {
+            currentSliceIndex = (currentSliceIndex + 1) % depth;
+            api.Logger.Debug($"PatternBuilder: Incremented slice to {currentSliceIndex}/{depth}");
+        }
+    }
+
+    public void DecrementSliceIndex()
+    {
+        var pattern = GetCurrentPattern();
+        int depth = pattern.GetDepth();
+
+        if (depth > 0)
+        {
+            currentSliceIndex = (currentSliceIndex - 1 + depth) % depth;
+            api.Logger.Debug($"PatternBuilder: Decremented slice to {currentSliceIndex}/{depth}");
+        }
+    }
+
+    public void ResetSliceIndex()
+    {
+        currentSliceIndex = 0;
+        api.Logger.Debug("PatternBuilder: Reset slice index to 0");
     }
 }

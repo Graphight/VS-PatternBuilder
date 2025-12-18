@@ -8,7 +8,7 @@ public class PatternDefinition
 {
     public string Name { get; set; }
     public string Description { get; set; }
-    public string Pattern { get; set; }
+    public string[] Slices { get; set; }
     public int Width { get; set; }
     public int Height { get; set; }
     public string Mode { get; set; }
@@ -21,12 +21,21 @@ public class PatternDefinition
         Blocks = new Dictionary<char, string>();
     }
 
-    public bool ParsePattern()
+    public int GetDepth()
     {
-        if (string.IsNullOrEmpty(Pattern))
+        return Slices?.Length ?? 0;
+    }
+
+    public bool ParsePattern(int sliceIndex)
+    {
+        if (sliceIndex < 0 || sliceIndex >= Slices.Length)
             return false;
 
-        string[] layers = Pattern.Split(',');
+        string slicePattern = Slices[sliceIndex];
+        if (string.IsNullOrEmpty(slicePattern))
+            return false;
+
+        string[] layers = slicePattern.Split(',');
 
         if (layers.Length != Height)
         {
@@ -52,9 +61,9 @@ public class PatternDefinition
         return true;
     }
 
-    public bool ValidatePattern()
+    public bool ValidatePattern(int sliceIndex)
     {
-        if (!ParsePattern())
+        if (!ParsePattern(sliceIndex))
             return false;
 
         bool hasPlayerMarker = false;
@@ -80,57 +89,63 @@ public class PatternDefinition
     {
         var errors = new List<string>();
 
-        if (!ParsePattern())
+        if (Slices == null || Slices.Length == 0)
         {
-            errors.Add("Pattern parsing failed - check dimensions match pattern string");
+            errors.Add("No slices defined in pattern");
             return errors;
         }
 
-        bool hasPlayerMarker = false;
-        var invalidBlocks = new List<string>();
-
-        for (int y = 0; y < Height; y++)
+        for (int sliceIdx = 0; sliceIdx < Slices.Length; sliceIdx++)
         {
-            for (int x = 0; x < Width; x++)
+            if (!ParsePattern(sliceIdx))
             {
-                char c = parsedGrid[y, x];
-                if (c == 'P')
-                    hasPlayerMarker = true;
+                errors.Add($"Slice {sliceIdx}: Pattern parsing failed - check dimensions match pattern string");
+                continue;
+            }
 
-                if (c != '_' && c != 'P' && Blocks.ContainsKey(c))
+            bool hasPlayerMarker = false;
+            var invalidBlocks = new List<string>();
+
+            for (int y = 0; y < Height; y++)
+            {
+                for (int x = 0; x < Width; x++)
                 {
-                    string blockCode = Blocks[c];
+                    char c = parsedGrid[y, x];
+                    if (c == 'P')
+                        hasPlayerMarker = true;
 
-                    if (blockCode.Contains("*"))
-                        continue;
-
-                    var block = api.World.GetBlock(new AssetLocation(blockCode));
-                    if (block == null)
+                    if (c != '_' && c != 'P' && Blocks.ContainsKey(c))
                     {
-                        invalidBlocks.Add($"'{c}' -> {blockCode}");
+                        string blockCode = Blocks[c];
+
+                        if (blockCode.Contains("*"))
+                            continue;
+
+                        var block = api.World.GetBlock(new AssetLocation(blockCode));
+                        if (block == null)
+                        {
+                            invalidBlocks.Add($"'{c}' -> {blockCode}");
+                        }
                     }
                 }
             }
-        }
 
-        if (!hasPlayerMarker)
-        {
-            errors.Add("Missing 'P' (player) marker - pattern needs player position");
-        }
+            if (!hasPlayerMarker)
+            {
+                errors.Add($"Slice {sliceIdx}: Missing 'P' (player) marker - pattern needs player position");
+            }
 
-        if (invalidBlocks.Count > 0)
-        {
-            errors.Add($"Invalid block codes: {string.Join(", ", invalidBlocks)}");
+            if (invalidBlocks.Count > 0)
+            {
+                errors.Add($"Slice {sliceIdx}: Invalid block codes: {string.Join(", ", invalidBlocks)}");
+            }
         }
 
         return errors;
     }
 
-    public int FindPlayerFeet()
+    public int FindPlayerFeet(int sliceIndex)
     {
-        if (parsedGrid == null)
-            ParsePattern();
-
         for (int y = 0; y < Height; y++)
         {
             for (int x = 0; x < Width; x++)
@@ -145,7 +160,7 @@ public class PatternDefinition
 
     public string GetBlockAt(int x, int y)
     {
-        if (parsedGrid == null || y < 0 || y >= Height || x < 0 || x >= Width)
+        if (y < 0 || y >= Height || x < 0 || x >= Width)
             return null;
 
         char c = parsedGrid[y, x];
@@ -162,7 +177,7 @@ public class PatternDefinition
         {
             Name = "Default Road",
             Description = "3-wide gravel road with dirt foundation",
-            Pattern = "DDD,GGG,_P_,___",
+            Slices = [ "DDD,GGG,_P_,___" ],
             Width = 3,
             Height = 4,
             Blocks = new Dictionary<char, string>

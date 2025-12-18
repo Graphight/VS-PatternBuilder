@@ -23,6 +23,7 @@ public class PatternBuilderModSystem : ModSystem
     private ICoreServerAPI serverApi;
     private bool buildingEnabled = false;
     private BlockPos lastPlacementPos;
+    private CardinalDirection? lastDirection;
     private long tickListenerId;
 
     private PatternManager patternManager;
@@ -36,6 +37,14 @@ public class PatternBuilderModSystem : ModSystem
     private const int InventoryCheckCacheSize = 5;
 
     private const string NetworkChannelId = "patternbuilder";
+
+    private static readonly Dictionary<CardinalDirection, CardinalDirection> OppositeDirections = new()
+    {
+        { CardinalDirection.North, CardinalDirection.South },
+        { CardinalDirection.South, CardinalDirection.North },
+        { CardinalDirection.East, CardinalDirection.West },
+        { CardinalDirection.West, CardinalDirection.East }
+    };
 
     public override void Start(ICoreAPI api)
     {
@@ -246,10 +255,14 @@ public class PatternBuilderModSystem : ModSystem
         }
 
         int currentSlot = patternManager.GetCurrentSlot();
+        int currentSlice = patternManager.GetCurrentSliceIndex();
+        int depth = pattern.GetDepth();
+
         clientApi.ShowChatMessage($"Current Pattern [Slot {currentSlot}]:");
         clientApi.ShowChatMessage($"  Name: {pattern.Name}");
         clientApi.ShowChatMessage($"  Description: {pattern.Description}");
-        clientApi.ShowChatMessage($"  Dimensions: {pattern.Width}x{pattern.Height}");
+        clientApi.ShowChatMessage($"  Dimensions: {pattern.Width}x{pattern.Height} (Depth: {depth})");
+        clientApi.ShowChatMessage($"  Current Slice: {currentSlice + 1}/{depth}");
         clientApi.ShowChatMessage($"  Mode: {pattern.Mode ?? "adaptive"}");
 
         return TextCommandResult.Success();
@@ -393,12 +406,18 @@ public class PatternBuilderModSystem : ModSystem
         {
             CardinalDirection direction = CalculateDirection(lastPlacementPos, currentPos);
 
+            if (lastDirection.HasValue)
+            {
+                UpdateSliceIndexBasedOnDirection(lastDirection.Value, direction);
+            }
+
             // Offset placement ahead of player (1 block in movement direction)
             BlockPos placePos = OffsetPositionForward(currentPos, direction, 1);
 
             // Place the road pattern ahead of player
             PlaceRoadPattern(placePos, direction);
 
+            lastDirection = direction;
             lastPlacementPos = currentPos.Copy();
         }
     }
@@ -439,6 +458,18 @@ public class PatternBuilderModSystem : ModSystem
             CardinalDirection.West => new BlockPos(pos.X - blocks, pos.Y, pos.Z),
             _ => pos.Copy()
         };
+    }
+
+    private void UpdateSliceIndexBasedOnDirection(CardinalDirection previous, CardinalDirection current)
+    {
+        if (previous == current)
+        {
+            patternManager.IncrementSliceIndex();
+        }
+        else if (OppositeDirections[previous] == current)
+        {
+            patternManager.DecrementSliceIndex();
+        }
     }
 
     private void PlaceRoadPattern(BlockPos centerPos, CardinalDirection direction)
@@ -504,7 +535,14 @@ public class PatternBuilderModSystem : ModSystem
         int patternWidth = currentPattern.Width;
         int patternHeight = currentPattern.Height;
 
-        int playerLayer = currentPattern.FindPlayerFeet();
+        int currentSliceIndex = patternManager.GetCurrentSliceIndex();
+        if (!currentPattern.ParsePattern(currentSliceIndex))
+        {
+            Mod.Logger.Error($"PatternBuilder: Failed to parse slice {currentSliceIndex}");
+            return;
+        }
+
+        int playerLayer = currentPattern.FindPlayerFeet(currentSliceIndex);
         int baseY = centerPos.Y - playerLayer;
 
         var message = new PlacePatternMessage

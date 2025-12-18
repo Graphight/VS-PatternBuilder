@@ -182,18 +182,18 @@ public class PatternLoader
             },
             new
             {
-                FileName = "slot3_wide_road.json",
+                FileName = "slot3_wildcard_road.json",
                 Pattern = new PatternDefinition
                 {
-                    Name = "Wide Road",
-                    Description = "5-wide gravel road for main thoroughfares",
+                    Name = "Wildcard Road",
+                    Description = "5-wide road using any soil/gravel variants (wildcard demo)",
                     Slices = [ "SSSSS,GGGGG,__P__,_____" ],
                     Width = 5,
                     Height = 4,
                     Blocks = new Dictionary<char, string>
                     {
-                        { 'S', "game:soil-medium-normal" },
-                        { 'G', "game:gravel-granite" },
+                        { 'S', "game:soil-*" },
+                        { 'G', "game:gravel-*" },
                         { 'P', "player" }
                     }
                 }

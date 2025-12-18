@@ -33,7 +33,6 @@ public class PreviewBlock : IDisposable
 
         try
         {
-            api.World.Logger.Debug($"PreviewBlock: Getting mesh for block {Block.Code}");
             MeshData meshData = GetBlockMesh();
             if (meshData == null)
             {
@@ -41,10 +40,7 @@ public class PreviewBlock : IDisposable
                 return false;
             }
 
-            api.World.Logger.Debug($"PreviewBlock: Applying tint color {TintColor} to mesh");
             ApplyTintToMesh(meshData);
-
-            api.World.Logger.Debug($"PreviewBlock: Uploading mesh to GPU");
             MeshRef = api.Render.UploadMesh(meshData);
 
             if (MeshRef == null)
@@ -53,7 +49,6 @@ public class PreviewBlock : IDisposable
                 return false;
             }
 
-            api.World.Logger.Debug($"PreviewBlock: Successfully uploaded mesh for {Block.Code}");
             return true;
         }
         catch (Exception e)

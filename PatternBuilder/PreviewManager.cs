@@ -132,7 +132,6 @@ public class PreviewManager
             }
         }
 
-        api.World.Logger.Notification($"[PreviewManager] Created {previewBlocks.Count} preview blocks at {centerPos}");
         renderer.SetPreviewBlocks(previewBlocks);
     }
 

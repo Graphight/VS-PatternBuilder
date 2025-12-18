@@ -43,14 +43,12 @@ public class PreviewRenderer : IRenderer
     public void OnRenderFrame(float deltaTime, EnumRenderStage stage)
     {
         // This shader approach was majorly inspired by the VanillaBuilding: Expanded mod from "dsisco"
-        // https://mods.vintagestory.at/vanillabuildingexpanded - Thank you David
+        // https://mods.vintagestory.at/vanillabuildingexpanded - Thank you, David
         
         if (previewBlocks.Count == 0)
         {
             return;
         }
-
-        api.Logger.Debug($"[PreviewRenderer] Rendering {previewBlocks.Count} preview blocks");
 
         var player = api.World.Player;
         if (player?.Entity == null)

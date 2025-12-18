@@ -478,12 +478,6 @@ public class PatternBuilderModSystem : ModSystem
         }
         else if (OppositeDirections[forward] == current)
         {
-            // When we just wrapped (or starting fresh) we need to decrement twice to get to proper index
-            // I could fix this properly by changing index at a better time but I am lazy
-            if (patternManager.GetCurrentSliceIndex() == 0)
-            {
-                patternManager.DecrementSliceIndex();
-            }
             patternManager.DecrementSliceIndex();
         }
         else

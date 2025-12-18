@@ -26,6 +26,19 @@
 -  Enables: lamp posts (every Nth block), tunnel supports, decorative alternating patterns, road markers
 -  Performance: O(1) slice lookup and direction comparison
 
+### Phase 4 Tier 2: Pattern Preview (2025-12-18)
+**Visual preview of pattern placement - prevents mistakes!**
+
+-  Semi-transparent preview blocks rendered 2 blocks ahead of player
+-  Color-coded tinting: Green (air), Blue (replacing blocks), Grey (same blocks)
+-  Toggle preview on/off via `.pb preview` command
+-  Preview updates automatically when building is enabled
+-  Supports both 2D and 3D patterns (shows current slice)
+-  Client-side mesh rendering with proper texture atlas binding
+-  Performance optimized (no debug logging, efficient mesh caching)
+-  Carve mode support: shows air blocks as semi-transparent glass
+-  Credit: Shader approach inspired by VanillaBuilding: Expanded mod by dsisco
+
 ---
 
 ## Phase 4 Development Priorities
@@ -33,7 +46,7 @@
 ### Tier 2: Core Usability (Major UX Improvements)
 **These make the mod work in real-world scenarios, not just flat creative builds.**
 
-2. **3D patterns** ✅ COMPLETE (2025-12-18)
+2. **3D patterns** COMPLETE (2025-12-18)
    - Support patterns with multiple "slices" along direction of travel
    - Add optional `Slices` array to pattern JSON (backwards compatible)
    - Track slice index during placement, cycle through slices
@@ -69,14 +82,14 @@
    }
    ```
 
-3. **Pattern preview** (ghost blocks before placement)
-   - Render semi-transparent preview blocks at next placement position
-   - Update preview based on movement direction
-   - Toggle preview on/off via command
-   - Preview should respect terrain (once terrain following is implemented)
-   - Preview should show correct slice in 3D patterns
+3. **Pattern preview** COMPLETE (2025-12-18)
+   - Render semi-transparent preview blocks 2 blocks ahead of placement
+   - Color-coded tinting system (green/blue/grey)
+   - Toggle preview on/off via `.pb preview` command
+   - Supports both 2D and 3D patterns with current slice
+   - Client-side mesh rendering with texture atlas binding
    - **Impact**: Prevents costly mistakes, provides visual feedback
-   - **Complexity**: Medium - client-side rendering, temporary blocks
+   - **Complexity**: Medium - client-side rendering, shader setup, texture binding
    - **Risk**: Low - purely visual, no gameplay impact
 
 4. **Terrain following** (raycasting for ground level)
@@ -141,10 +154,13 @@ Based on dependencies and impact:
 -  Works with wildcard patterns and inventory consumption
 -  Tested with lamp post road example
 
-**Item 3**: Pattern preview (Tier 2)
-- Provides visual feedback for testing terrain following
-- Must support 3D pattern slice preview
-- There already exists a ghost block system for things like cementation furnaces maybe use that
+** Item 3 COMPLETE**: Pattern preview (Tier 2)
+-  Semi-transparent preview 2 blocks ahead
+-  Color-coded tinting (green/blue/grey)
+-  Mesh rendering with texture atlas binding
+-  Toggle via `.pb preview` command
+-  Works with both 2D and 3D patterns
+-  Performance optimized (removed debug logging)
 
 **Item 4**: Terrain following (Tier 2)
 - Benefits from pattern preview for testing
@@ -195,10 +211,13 @@ Based on dependencies and impact:
 - Should bridges auto-span gaps? (phase 5 feature, not initial implementation)
 - Stairs vs ramps on slopes? (use pattern definition, don't auto-generate)
 
-**Pattern Preview**:
-- Preview distance ahead? (1 pattern placement, same as actual placement)
-- Preview while disabled? (no, only when building enabled)
-- Performance impact of rendering? (should be minimal, single pattern per tick)
+**Pattern Preview** (ANSWERED):
+- Preview distance ahead? => 2 blocks ahead for better visibility
+- Preview while disabled? => No, only when building enabled
+- Performance impact of rendering? => Minimal after debug log removal
+- Tinting system? => Green (air), Blue (replacing), Grey (same blocks)
+- Carve mode support? => Yes, shows air blocks as semi-transparent glass
+- Texture binding? => Block texture atlas bound to shader for correct textures
 
 **Corners**:
 - Separate corner pattern slots or auto-rotate? (separate slots for flexibility)

@@ -12,9 +12,9 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 
 **Phase 4 Tier 1**: ✅ Complete - Survival mode support with inventory consumption
 
-**Phase 4 Tier 2**: ✅ Complete - 3D patterns (slice-based repeating patterns)
+**Phase 4 Tier 2**: ✅ Complete - 3D patterns (slice-based repeating patterns) + Pattern preview
 
-**Phase 4 Tier 2+**: Planned - Preview mode, terrain following, in-game editor
+**Phase 4 Tier 3**: Planned - Terrain following, directional blocks, in-game editor
 
 ## Features
 
@@ -23,6 +23,7 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 - **Movement-based placement**: Walk to build - patterns follow your movement
 - **Directional awareness**: Patterns orient based on movement direction (N/S/E/W)
 - **3D slice patterns**: Multi-slice patterns with bidirectional traversal for periodic variation (lamp posts, markers, etc.)
+- **Pattern preview**: See semi-transparent preview blocks 2 positions ahead with color-coded tinting (green=air, blue=replacing, grey=same)
 - **Adaptive & Carve modes**: Patterns can mold to terrain or carve through it
 - **Survival mode support**: Consumes blocks from inventory, works in both creative and survival
 - **Wildcard patterns**: Match any block variant (e.g., `game:soil-*` matches all soil types)
@@ -43,6 +44,7 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 .pb slot <X>     Switch to pattern at slot <X> (1-50)
 .pb info         Show current pattern details
 .pb reload       Reload patterns from disk
+.pb preview      Toggle pattern preview on/off
 ```
 
 ## Pattern Files
@@ -202,6 +204,15 @@ dotnet clean  # Clean build artifacts
 - Reload patterns with `.pb reload` after editing
 - Use `.pb info` to see current pattern details and material requirements
 - Walking over existing patterns won't waste materials
+- Enable preview with `.pb preview` to see what will be placed before it happens
+
+**Pattern Preview**:
+- Preview appears 2 blocks ahead of your movement
+- **Green tint**: Placing in air (safe)
+- **Blue tint**: Replacing existing blocks (intentional)
+- **Grey tint**: Replacing with same block (no extra consumption)
+- Works with both 2D and 3D patterns (shows current slice)
+- Toggle on/off anytime with `.pb preview`
 
 ## Pattern Modes
 

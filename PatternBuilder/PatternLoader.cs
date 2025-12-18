@@ -153,18 +153,29 @@ public class PatternLoader
             },
             new
             {
-                FileName = "slot2_narrow_path.json",
+                FileName = "slot2_lamppost_road.json",
                 Pattern = new PatternDefinition
                 {
-                    Name = "Narrow Path",
-                    Description = "Single-block dirt path",
-                    Slices = [ "D,G,P,_" ],
-                    Width = 1,
-                    Height = 4,
+                    Name = "Lamp Post Road",
+                    Description = "3-wide gravel road with lamp posts every 8 blocks",
+                    Slices = [
+                        "DDD,GGG,_P_,___,___",
+                        "DDD,GGG,_P_,___,___",
+                        "DDD,GGG,_P_,___,___",
+                        "DDD,GGG,_P_,___,___",
+                        "DDD,GGG,_P_,___,___",
+                        "DDD,GGG,_P_,___,___",
+                        "DDD,GGG,_P_,___,___",
+                        "DDD,GGG,WPW,W_W,L_L"
+                    ],
+                    Width = 3,
+                    Height = 5,
                     Blocks = new Dictionary<char, string>
                     {
                         { 'D', "game:soil-medium-normal" },
                         { 'G', "game:gravel-granite" },
+                        { 'W', "game:woodenfence-oak-empty-free" },
+                        { 'L', "game:lantern-iron-on" },
                         { 'P', "player" }
                     }
                 }

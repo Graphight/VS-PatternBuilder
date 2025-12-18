@@ -39,20 +39,15 @@ public class PatternLoader
                 pattern.Mode = "adaptive";
             }
 
-            if (!pattern.ValidatePattern())
-            {
-                api.Logger.Error($"PatternBuilder: Pattern validation failed: {filePath}");
-                return null;
-            }
-
             var validationErrors = pattern.GetValidationErrors(api);
             if (validationErrors.Count > 0)
             {
-                api.Logger.Warning($"PatternBuilder: Pattern '{pattern.Name}' has validation warnings:");
+                api.Logger.Error($"PatternBuilder: Pattern '{pattern.Name}' validation failed:");
                 foreach (var error in validationErrors)
                 {
-                    api.Logger.Warning($"  - {error}");
+                    api.Logger.Error($"  - {error}");
                 }
+                return null;
             }
 
             api.Logger.Notification($"PatternBuilder: Loaded pattern '{pattern.Name}' from {Path.GetFileName(filePath)}");
@@ -145,7 +140,7 @@ public class PatternLoader
                 {
                     Name = "Default Road",
                     Description = "3-wide gravel road with dirt foundation",
-                    Pattern = "DDD,GGG,_P_,___",
+                    Slices = [ "DDD,GGG,_P_,___" ],
                     Width = 3,
                     Height = 4,
                     Blocks = new Dictionary<char, string>
@@ -163,7 +158,7 @@ public class PatternLoader
                 {
                     Name = "Narrow Path",
                     Description = "Single-block dirt path",
-                    Pattern = "D,G,P,_",
+                    Slices = [ "D,G,P,_" ],
                     Width = 1,
                     Height = 4,
                     Blocks = new Dictionary<char, string>
@@ -181,7 +176,7 @@ public class PatternLoader
                 {
                     Name = "Wide Road",
                     Description = "5-wide gravel road for main thoroughfares",
-                    Pattern = "SSSSS,GGGGG,__P__,_____",
+                    Slices = [ "SSSSS,GGGGG,__P__,_____" ],
                     Width = 5,
                     Height = 4,
                     Blocks = new Dictionary<char, string>
@@ -199,7 +194,7 @@ public class PatternLoader
                 {
                     Name = "Stone Wall",
                     Description = "3-block tall cobblestone wall",
-                    Pattern = "CSS,CP_,C__,C__",
+                    Slices = [ "CSS,CP_,C__,C__" ],
                     Width = 3,
                     Height = 4,
                     Blocks = new Dictionary<char, string>
@@ -217,7 +212,7 @@ public class PatternLoader
                 {
                     Name = "Default Tunnel",
                     Description = "5-wide stone brick tunnel",
-                    Pattern = "SSSSS,S_P_S,S___S,S___S,SSSSS",
+                    Slices = [ "SSSSS,S_P_S,S___S,S___S,SSSSS" ],
                     Width = 5,
                     Height = 5,
                     Mode = "carve",

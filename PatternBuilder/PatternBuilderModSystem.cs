@@ -31,6 +31,9 @@ public class PatternBuilderModSystem : ModSystem
     private PatternLoader patternLoader;
     private Dictionary<string, int> blockIdCache;
 
+    private PreviewRenderer previewRenderer;
+    private PreviewManager previewManager;
+
     private IClientNetworkChannel clientChannel;
     private IServerNetworkChannel serverChannel;
 
@@ -112,6 +115,11 @@ public class PatternBuilderModSystem : ModSystem
         blockIdCache = new Dictionary<string, int>();
         CacheBlockIdsForPattern(patternManager.GetCurrentPattern());
 
+        previewRenderer = new PreviewRenderer(api);
+        api.Event.RegisterRenderer(previewRenderer, EnumRenderStage.Opaque, "patternbuilder_preview");
+
+        previewManager = new PreviewManager(api, previewRenderer, patternManager, blockIdCache);
+
         RegisterCommands(api);
 
         tickListenerId = clientApi.Event.RegisterGameTickListener(OnGameTick, 100);
@@ -189,6 +197,10 @@ public class PatternBuilderModSystem : ModSystem
                 .WithDescription($"Switch to pattern slot (1-{PatternManager.MaxSlots})")
                 .WithArgs(api.ChatCommands.Parsers.Int("slot"))
                 .HandleWith(OnCommandSlot)
+            .EndSubCommand()
+            .BeginSubCommand("preview")
+                .WithDescription("Toggle pattern preview on/off")
+                .HandleWith(OnCommandPreview)
             .EndSubCommand()
             .HandleWith(OnCommandHelp);
     }
@@ -268,10 +280,11 @@ public class PatternBuilderModSystem : ModSystem
         clientApi.ShowChatMessage("  .pb toggle - Toggle pattern building on/off");
         clientApi.ShowChatMessage("  .pb on - Enable pattern building");
         clientApi.ShowChatMessage("  .pb off - Disable pattern building");
-        clientApi.ShowChatMessage("  .pb slot <X> - Switch to pattern at slot <X>");
+        clientApi.ShowChatMessage("  .pb slot 'X' - Switch to pattern at slot 'X'");
         clientApi.ShowChatMessage("  .pb list - Show available patterns");
         clientApi.ShowChatMessage("  .pb info - Show current pattern details");
         clientApi.ShowChatMessage("  .pb reload - Reload patterns from disk");
+        clientApi.ShowChatMessage("  .pb preview - Toggle pattern preview on/off");
         clientApi.ShowChatMessage("");
         clientApi.ShowChatMessage("Walk forward while pattern building is enabled to place patterns");
         return TextCommandResult.Success();
@@ -303,6 +316,14 @@ public class PatternBuilderModSystem : ModSystem
         return TextCommandResult.Success();
     }
 
+    private TextCommandResult OnCommandPreview(TextCommandCallingArgs args)
+    {
+        previewManager.TogglePreview();
+        string status = previewManager.IsPreviewEnabled ? "enabled" : "disabled";
+        clientApi.ShowChatMessage($"Pattern preview {status}");
+        return TextCommandResult.Success();
+    }
+
     private void ToggleRoadBuilding()
     {
         SetBuilding(!buildingEnabled);
@@ -327,6 +348,7 @@ public class PatternBuilderModSystem : ModSystem
         {
             lastDirection = null;
             forwardDirection = null;
+            previewManager.ClearPreview();
         }
     }
 
@@ -336,6 +358,12 @@ public class PatternBuilderModSystem : ModSystem
         foreach (var kvp in pattern.Blocks)
         {
             string blockCode = kvp.Value;
+
+            if (blockCode == "player" || blockCode == "air")
+            {
+                continue;
+            }
+
             if (blockIdCache.ContainsKey(blockCode))
                 continue;
 
@@ -386,13 +414,29 @@ public class PatternBuilderModSystem : ModSystem
 
         BlockPos currentPos = player.Entity.Pos.AsBlockPos;
 
+        // Determine current direction based on last movement or player facing
+        CardinalDirection direction;
+        if (forwardDirection.HasValue)
+        {
+            direction = forwardDirection.Value;
+        }
+        else
+        {
+            // Default to North if no direction established yet
+            direction = CardinalDirection.North;
+        }
+
+        // Always update preview when building is enabled (2 blocks ahead)
+        BlockPos previewPos = OffsetPositionForward(currentPos, direction, 2);
+        previewManager.UpdatePreview(previewPos, direction);
+
         // Calculate distance moved
         double distance = CalculateDistance(lastPlacementPos, currentPos);
 
         // Check if we've moved far enough to place a new segment (>0.6 blocks)
         if (distance > 0.6)
         {
-            CardinalDirection direction = CalculateDirection(lastPlacementPos, currentPos);
+            direction = CalculateDirection(lastPlacementPos, currentPos);
 
             if (!forwardDirection.HasValue)
             {
@@ -608,6 +652,8 @@ public class PatternBuilderModSystem : ModSystem
         if (clientApi != null)
         {
             clientApi.Event.UnregisterGameTickListener(tickListenerId);
+            clientApi.Event.UnregisterRenderer(previewRenderer, EnumRenderStage.Done);
+            previewRenderer?.Dispose();
         }
         base.Dispose();
     }

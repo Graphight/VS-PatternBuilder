@@ -24,6 +24,7 @@ public class PatternBuilderModSystem : ModSystem
     private bool buildingEnabled = false;
     private BlockPos lastPlacementPos;
     private CardinalDirection? lastDirection;
+    private CardinalDirection? forwardDirection;
     private long tickListenerId;
 
     private PatternManager patternManager;
@@ -330,6 +331,11 @@ public class PatternBuilderModSystem : ModSystem
                 lastPlacementPos = player.Entity.Pos.AsBlockPos;
             }
         }
+        else
+        {
+            lastDirection = null;
+            forwardDirection = null;
+        }
     }
 
     private void CacheBlockIdsForPattern(PatternDefinition pattern)
@@ -406,9 +412,13 @@ public class PatternBuilderModSystem : ModSystem
         {
             CardinalDirection direction = CalculateDirection(lastPlacementPos, currentPos);
 
-            if (lastDirection.HasValue)
+            if (!forwardDirection.HasValue)
             {
-                UpdateSliceIndexBasedOnDirection(lastDirection.Value, direction);
+                forwardDirection = direction;
+            }
+            else
+            {
+                UpdateSliceIndexBasedOnDirection(forwardDirection.Value, direction);
             }
 
             // Offset placement ahead of player (1 block in movement direction)
@@ -460,15 +470,25 @@ public class PatternBuilderModSystem : ModSystem
         };
     }
 
-    private void UpdateSliceIndexBasedOnDirection(CardinalDirection previous, CardinalDirection current)
+    private void UpdateSliceIndexBasedOnDirection(CardinalDirection forward, CardinalDirection current)
     {
-        if (previous == current)
+        if (forward == current)
         {
             patternManager.IncrementSliceIndex();
         }
-        else if (OppositeDirections[previous] == current)
+        else if (OppositeDirections[forward] == current)
         {
+            // When we just wrapped (or starting fresh) we need to decrement twice to get to proper index
+            // I could fix this properly by changing index at a better time but I am lazy
+            if (patternManager.GetCurrentSliceIndex() == 0)
+            {
+                patternManager.DecrementSliceIndex();
+            }
             patternManager.DecrementSliceIndex();
+        }
+        else
+        {
+            forwardDirection = current;
         }
     }
 

@@ -257,14 +257,14 @@ public class PatternLoader
 Pattern files use Vintage Story's recipe grid syntax for easy editing.
 
 File Naming:
-- Files must be named 'slotN_name.json' where N is 1-{PatternManager.MaxSlots}
-- Example: slot1_road.json, slot2_path.json
+- Files must be named 'slotN_name.json' where N is 1-50
+- Example: slot1_road.json, slot2_lamppost_road.json
 
-Pattern Format:
+2D Pattern Format (single slice):
 {
-  ""name"": ""Pattern Name"",
-  ""description"": ""Description of the pattern"",
-  ""pattern"": ""DDD,GGG,_P_,___"",
+  ""name"": ""Simple Road"",
+  ""description"": ""3-wide gravel road"",
+  ""slices"": [ ""DDD,GGG,_P_,___"" ],
   ""width"": 3,
   ""height"": 4,
   ""mode"": ""adaptive"",
@@ -275,26 +275,53 @@ Pattern Format:
   }
 }
 
-Pattern String:
-- Comma-separated rows (bottom to top Y-layers)
+3D Pattern Format (multiple slices):
+{
+  ""name"": ""Lamp Post Road"",
+  ""description"": ""Road with lamp posts every 8 blocks"",
+  ""slices"": [
+    ""DDD,GGG,_P_,___"",
+    ""DDD,GGG,_P_,___"",
+    ""DDD,GGG,_P_,___"",
+    ""DDD,GGG,_P_,___"",
+    ""DDD,GGG,_P_,___"",
+    ""DDD,GGG,_P_,___"",
+    ""DDD,GGG,_P_,___"",
+    ""DDD,GGG,LPL,_L_""
+  ],
+  ""width"": 3,
+  ""height"": 4,
+  ""blocks"": {
+    ""D"": ""game:soil-medium-normal"",
+    ""G"": ""game:gravel-granite"",
+    ""L"": ""game:lantern-iron-on"",
+    ""P"": ""player""
+  }
+}
+
+Slice Format:
+- Each slice is a 2D pattern (comma-separated rows, bottom to top Y-layers)
 - Each character represents one block
 - '_' = air/empty
-- 'P' = player's feet position (required, marks where player stands)
+- 'P' = player's feet position (required in each slice)
+- Walk forward to progress through slices, backward to reverse
 
 Mode:
-- ""adaptive"" (default): Adapts to terrain, only places solid blocks, preserves existing terrain
-- ""carve"": Carves through terrain, places air blocks to clear space (for tunnels)
+- ""adaptive"" (default): Only places solid blocks, preserves existing terrain
+- ""carve"": Places air blocks to cut through terrain (for tunnels)
 
 Block Codes:
 - Use standard VS AssetLocation format: ""game:blockname""
 - Find block codes in VS creative menu or wiki
+- Wildcards supported: ""game:soil-*"" matches any soil variant
 
 Tips:
-- Player marker 'P' determines vertical offset
-- Pattern width must match each row's character count
-- Pattern height must match number of comma-separated rows
+- Player marker 'P' determines vertical offset in each slice
+- Width/height must match each slice's dimensions
 - Use mode=""carve"" for tunnels that need to cut through terrain
-- Edit files while game is running, reload world to apply changes
+- Walk forward/backward to move through 3D pattern slices
+- Turn left/right to keep current slice (no increment/decrement)
+- Edit files while game is running, use '.pb reload' to apply changes
 ";
             File.WriteAllText(readmePath, readme);
             api.Logger.Notification("PatternBuilder: Created README.txt");

@@ -12,7 +12,9 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 
 **Phase 4 Tier 1**: ✅ Complete - Survival mode support with inventory consumption
 
-**Phase 4 Tier 2+**: Planned - Preview mode, 3D patterns, in-game editor
+**Phase 4 Tier 2**: ✅ Complete - 3D patterns (slice-based repeating patterns)
+
+**Phase 4 Tier 2+**: Planned - Preview mode, terrain following, in-game editor
 
 ## Features
 
@@ -20,6 +22,7 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 - **50 pattern slots**: Quick-switch between different patterns (configurable)
 - **Movement-based placement**: Walk to build - patterns follow your movement
 - **Directional awareness**: Patterns orient based on movement direction (N/S/E/W)
+- **3D slice patterns**: Multi-slice patterns with bidirectional traversal for periodic variation (lamp posts, markers, etc.)
 - **Adaptive & Carve modes**: Patterns can mold to terrain or carve through it
 - **Survival mode support**: Consumes blocks from inventory, works in both creative and survival
 - **Wildcard patterns**: Match any block variant (e.g., `game:soil-*` matches all soil types)
@@ -60,12 +63,12 @@ Patterns are stored in JSON files at:
 
 ### Example Patterns
 
-**Basic pattern with exact block types**:
+**Basic 2D pattern with exact block types**:
 ```json
 {
   "Name": "Default Road",
   "Description": "3-wide gravel road with dirt foundation",
-  "Pattern": "DDD,GGG,_P_,___",
+  "Slices": [ "DDD,GGG,_P_,___" ],
   "Width": 3,
   "Height": 4,
   "Mode": "adaptive",
@@ -77,13 +80,40 @@ Patterns are stored in JSON files at:
 }
 ```
 
-**Wildcard pattern (survival-friendly)**:
+**3D pattern with multiple slices** (lamp posts every 8 blocks):
+```json
+{
+  "Name": "Lamp Post Road",
+  "Description": "3-wide gravel road with lamp posts every 8 blocks",
+  "Slices": [
+    "DDD,GGG,_P_,___,___",
+    "DDD,GGG,_P_,___,___",
+    "DDD,GGG,_P_,___,___",
+    "DDD,GGG,_P_,___,___",
+    "DDD,GGG,_P_,___,___",
+    "DDD,GGG,_P_,___,___",
+    "DDD,GGG,_P_,___,___",
+    "DDD,GGG,WPW,W_W,L_L"
+  ],
+  "Width": 3,
+  "Height": 5,
+  "Blocks": {
+    "D": "game:soil-medium-normal",
+    "G": "game:gravel-granite",
+    "W": "game:woodenfence-oak-empty-free",
+    "L": "game:paperlantern-on",
+    "P": "player"
+  }
+}
+```
+
+**Wildcard pattern** (survival-friendly):
 ```json
 {
   "Name": "Flexible Road",
   "Description": "Works with ANY soil and gravel variants",
-  "Pattern": "SSS,GGG,_P_,___",
-  "Width": 3,
+  "Slices": [ "SSSSS,GGGGG,__P__,_____" ],
+  "Width": 5,
   "Height": 4,
   "Mode": "adaptive",
   "Blocks": {
@@ -95,12 +125,19 @@ Patterns are stored in JSON files at:
 ```
 
 **Pattern syntax**:
-- Pattern uses comma-separated Y-layers (bottom to top)
+- Slices: Array of 2D patterns (one entry = 2D pattern, multiple entries = 3D pattern)
+- Each slice uses comma-separated Y-layers (bottom to top)
 - Each character maps to a block code
 - `_` = air/empty
-- `P` = player feet position (required for Y-offset)
+- `P` = player feet position (required in each slice for Y-offset)
 - `*` = wildcard (matches any variant, e.g., `game:soil-*`)
 - `Mode` = "adaptive" (molds to terrain) or "carve" (cuts through terrain)
+
+**3D pattern behavior**:
+- Walk forward: cycles through slices (0→1→2...→N→0)
+- Walk backward: reverses through slices (N→...→2→1→0→N)
+- Turn left/right: maintains current slice (no slice change)
+- Pattern switch: resets to slice 0
 
 ## Installation
 

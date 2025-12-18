@@ -13,6 +13,19 @@
 -  Performance optimizations (inventory caching, optimized scanning)
 -  Creative mode bypass
 
+### Phase 4 Tier 2: 3D Patterns (2025-12-18)
+**Slice-based repeating patterns - periodic variation enabled!**
+
+-  Support patterns with multiple "slices" along direction of travel
+-  `Slices` array replaces old `Pattern` field (breaking change)
+-  Bidirectional traversal: forward increments, backward decrements slice index
+-  Perpendicular movement (turning) maintains current slice
+-  Direction tracking with forward direction reference
+-  Wrap-around detection prevents duplicate placements on reversal
+-  Slice index resets on pattern switch
+-  Enables: lamp posts (every Nth block), tunnel supports, decorative alternating patterns, road markers
+-  Performance: O(1) slice lookup and direction comparison
+
 ---
 
 ## Phase 4 Development Priorities
@@ -20,7 +33,7 @@
 ### Tier 2: Core Usability (Major UX Improvements)
 **These make the mod work in real-world scenarios, not just flat creative builds.**
 
-2. **3D patterns** (slice-based repeating patterns)
+2. **3D patterns** ✅ COMPLETE (2025-12-18)
    - Support patterns with multiple "slices" along direction of travel
    - Add optional `Slices` array to pattern JSON (backwards compatible)
    - Track slice index during placement, cycle through slices
@@ -122,16 +135,16 @@ Based on dependencies and impact:
 -  Survival/multiplayer use enabled
 -  Tested with wildcard patterns and smart consumption
 
-**Item 2**: 3D patterns (Tier 2)
-- Fundamental pattern capability
-- Relatively simple implementation (1-2 hours)
-- Backwards compatible with existing 2D patterns
-- Enables creative designs immediately
+** Item 2 COMPLETE**: 3D patterns (Tier 2)
+-  Slice-based architecture with bidirectional traversal
+-  Breaking change: removed old `Pattern` field
+-  Works with wildcard patterns and inventory consumption
+-  Tested with lamp post road example
 
 **Item 3**: Pattern preview (Tier 2)
 - Provides visual feedback for testing terrain following
 - Must support 3D pattern slice preview
-- Helps validate inventory consumption and 3D patterns
+- There already exists a ghost block system for things like cementation furnaces maybe use that
 
 **Item 4**: Terrain following (Tier 2)
 - Benefits from pattern preview for testing
@@ -153,13 +166,15 @@ Based on dependencies and impact:
 -  Wildcard support? => Yes, added `game:soil-*` pattern matching
 -  Duplicate consumption on existing blocks? => Fixed with smart consumption (check before placing)
 
-**3D Patterns**:
-- Backwards compatibility: fallback to `Pattern` string if `Slices` absent? (yes)
-- What if player walks backwards? (always increment slice index - simpler)
-- Should `.pb info` show current slice index? (yes, useful for debugging)
-- Reset slice index on pattern switch? (yes, always start from slice 0)
-- Max depth limit? (suggest 100 slices, prevents accidental massive patterns)
-- How to handle validation? (validate each slice independently, same as 2D patterns)
+**3D Patterns** (ANSWERED):
+-  Backwards compatibility: No - breaking change, removed old `Pattern` field entirely
+-  What if player walks backwards? => Decrement slice index (bidirectional traversal)
+-  Should `.pb info` show current slice index? => Yes, useful for debugging
+-  Reset slice index on pattern switch? => Yes, always start from slice 0
+-  Max depth limit? => No hard limit, Slices.Length determines depth
+-  How to handle validation? => Validate each slice independently, same as 2D patterns
+-  How to handle wrap-around on reversal? => Detect index 0, double-decrement to prevent duplicates
+-  Direction tracking? => Track forward direction, update on perpendicular turns
 
 **Terrain Following**:
 - Max climb/drop per segment? (suggest 2-3 blocks)

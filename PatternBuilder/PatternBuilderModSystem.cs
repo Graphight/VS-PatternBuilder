@@ -68,9 +68,6 @@ public class PatternBuilderModSystem : ModSystem
 
     private void OnClientPlacePattern(IPlayer fromPlayer, PlacePatternMessage message)
     {
-        if (message == null || message.BlockIds == null || message.Positions == null)
-            return;
-
         if (message.BlockIds.Count != message.Positions.Count)
         {
             Mod.Logger.Warning($"PatternBuilder: Mismatched block counts from {fromPlayer.PlayerName}");
@@ -249,11 +246,6 @@ public class PatternBuilderModSystem : ModSystem
     private TextCommandResult OnCommandInfo(TextCommandCallingArgs args)
     {
         var pattern = patternManager.GetCurrentPattern();
-        if (pattern == null)
-        {
-            clientApi.ShowChatMessage("No pattern loaded");
-            return TextCommandResult.Error("No pattern");
-        }
 
         int currentSlot = patternManager.GetCurrentSlot();
         int currentSlice = patternManager.GetCurrentSliceIndex();
@@ -340,9 +332,6 @@ public class PatternBuilderModSystem : ModSystem
 
     private void CacheBlockIdsForPattern(PatternDefinition pattern)
     {
-        if (pattern == null || pattern.Blocks == null)
-            return;
-
         int cachedCount = 0;
         foreach (var kvp in pattern.Blocks)
         {
@@ -396,13 +385,6 @@ public class PatternBuilderModSystem : ModSystem
         }
 
         BlockPos currentPos = player.Entity.Pos.AsBlockPos;
-
-        // If this is the first tick with road building enabled, initialize
-        if (lastPlacementPos == null)
-        {
-            lastPlacementPos = currentPos.Copy();
-            return;
-        }
 
         // Calculate distance moved
         double distance = CalculateDistance(lastPlacementPos, currentPos);
@@ -568,8 +550,6 @@ public class PatternBuilderModSystem : ModSystem
             for (int x = 0; x < patternWidth; x++)
             {
                 string blockCode = currentPattern.GetBlockAt(x, y);
-                if (blockCode == null)
-                    continue;
 
                 if (blockCode == "air" && !isCarveMode)
                     continue;

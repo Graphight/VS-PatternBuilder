@@ -490,12 +490,6 @@ public class PatternBuilderModSystem : ModSystem
     {
         var currentPattern = patternManager.GetCurrentPattern();
 
-        if (currentPattern == null)
-        {
-            Mod.Logger.Warning("PatternBuilder: No pattern loaded, skipping placement");
-            return;
-        }
-
         var player = clientApi.World.Player;
         if (player == null)
         {

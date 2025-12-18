@@ -175,7 +175,7 @@ public class PatternLoader
                         { 'D', "game:soil-medium-normal" },
                         { 'G', "game:gravel-granite" },
                         { 'W', "game:woodenfence-oak-empty-free" },
-                        { 'L', "game:lantern-iron-on" },
+                        { 'L', "game:paperlantern-on" },
                         { 'P', "player" }
                     }
                 }

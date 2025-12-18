@@ -151,10 +151,23 @@ Based on dependencies and impact:
 - Works with both 2D and 3D patterns
 - Requires extensive testing on varied terrain
 
-**Item 5+**: Corners, then in-game editor (Tier 3)
+**Item 5***: Directional block support (Tier 2)
+- Some blocks have inherent directions, how will these be placed
+- Some are easy like fences that have only a few options (standalone, N-S, E-W)
+- Some are hard like stairs (N-S, S-N, E-W, W-E, external, internal)
+- Some only have differences if they attach to things
+
+**Item 6+**: In-game editor (Tier 3 - Nice to have)
 - Only tackle after core features are stable
 - In-game editor must support 3D pattern creation
 - Consider user feedback before prioritizing
+
+**Item 7**: Feedback (Tier 3 - Nice to have)
+- Play a little sound when placing the pattern for feedback
+- Explore other forms of feedback
+
+**Item 8**: Corners (Tier 3 - Nice to have)
+- Programatically make corners or use defined patterns?
 
 ### Key Questions to Answer
 
@@ -199,7 +212,7 @@ Based on dependencies and impact:
 - How to edit 3D patterns? (slice-by-slice editor with navigation, copy/paste slices)
 - Preview while editing? (yes, essential for 3D pattern visualization)
 
-# Bugs
+# Known Bugs
 
 ## Active
 None currently!

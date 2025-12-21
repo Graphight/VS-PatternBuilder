@@ -121,10 +121,28 @@ public class PatternDefinition
                         if (blockCode.Contains("*"))
                             continue;
 
-                        var block = api.World.GetBlock(new AssetLocation(blockCode));
+                        string baseCode = blockCode.Contains("|")
+                            ? blockCode.Split('|')[0]
+                            : blockCode;
+
+                        Block block = null;
+
+                        if (blockCode.Contains("|"))
+                        {
+                            var matchingBlocks = api.World.SearchBlocks(new AssetLocation(baseCode + "*"));
+                            if (matchingBlocks != null && matchingBlocks.Length > 0)
+                            {
+                                block = matchingBlocks[0];
+                            }
+                        }
+                        else
+                        {
+                            block = api.World.GetBlock(new AssetLocation(baseCode));
+                        }
+
                         if (block == null)
                         {
-                            invalidBlocks.Add($"'{c}' -> {blockCode}");
+                            invalidBlocks.Add($"'{c}' -> {baseCode}");
                         }
                     }
                 }

@@ -595,17 +595,35 @@ public class PatternBuilderModSystem : ModSystem
             {
                 string blockCode = currentPattern.GetBlockAt(x, y);
 
-                if (blockCode == "air" && !isCarveMode)
+                string lookupCode = blockCode;
+
+                if (blockCode.Contains("|"))
+                {
+                    var directives = DirectionalBlockResolver.ParseDirectives(blockCode);
+
+                    string baseCode = directives.BaseBlockCode;
+                    if (directives.RelativeDirection != null)
+                    {
+                        var absoluteDir = DirectionalBlockResolver.TranslateRelativeToAbsolute(
+                            directives.RelativeDirection,
+                            direction);
+                        Mod.Logger.Debug($"PatternBuilder: Would resolve '{blockCode}' + {direction} → base:'{baseCode}' absoluteDir:{absoluteDir}");
+                    }
+
+                    lookupCode = baseCode;
+                }
+
+                if (lookupCode == "air" && !isCarveMode)
                     continue;
 
                 int blockId;
-                if (resolvedBlockIds != null && resolvedBlockIds.TryGetValue(blockCode, out int resolvedId))
+                if (resolvedBlockIds != null && resolvedBlockIds.TryGetValue(lookupCode, out int resolvedId))
                 {
                     blockId = resolvedId;
                 }
-                else if (!blockIdCache.TryGetValue(blockCode, out blockId))
+                else if (!blockIdCache.TryGetValue(lookupCode, out blockId))
                 {
-                    Mod.Logger.Warning($"PatternBuilder: Block '{blockCode}' not in cache or resolved");
+                    Mod.Logger.Warning($"PatternBuilder: Block '{lookupCode}' not in cache or resolved");
                     continue;
                 }
 

@@ -12,9 +12,11 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 
 **Phase 4 Tier 1**: ✅ Complete - Survival mode support with inventory consumption
 
-**Phase 4 Tier 2**: ✅ Complete - 3D patterns (slice-based repeating patterns) + Pattern preview
+**Phase 4 Tier 2**: ✅ Complete - 3D patterns + Pattern preview + Directional blocks
 
-**Phase 4 Tier 3**: Planned - Terrain following, directional blocks, in-game editor
+**Phase 4 Tier 2**: Planned - Terrain following 
+
+**Phase 4 Tier 3**: Planned - in-game editor
 
 ## Features
 
@@ -22,6 +24,8 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 - **50 pattern slots**: Quick-switch between different patterns (configurable)
 - **Movement-based placement**: Walk to build - patterns follow your movement
 - **Directional awareness**: Patterns orient based on movement direction (N/S/E/W)
+- **Directional block support**: Use relative directions (`|f|b|l|r`) in patterns - automatically adapts to travel direction
+- **Auto-connect blocks**: Fences and walls snap to connected forms immediately (`|auto` directive)
 - **3D slice patterns**: Multi-slice patterns with bidirectional traversal for periodic variation (lamp posts, markers, etc.)
 - **Pattern preview**: See semi-transparent preview blocks 2 positions ahead with color-coded tinting (green=air, blue=replacing, grey=same)
 - **Adaptive & Carve modes**: Patterns can mold to terrain or carve through it
@@ -102,7 +106,7 @@ Patterns are stored in JSON files at:
   "Blocks": {
     "D": "game:soil-medium-normal",
     "G": "game:gravel-granite",
-    "W": "game:woodenfence-oak-empty-free",
+    "W": "game:woodenfence-oak-empty-free|auto",
     "L": "game:paperlantern-on",
     "P": "player"
   }
@@ -121,6 +125,39 @@ Patterns are stored in JSON files at:
   "Blocks": {
     "S": "game:soil-*",
     "G": "game:gravel-*",
+    "P": "player"
+  }
+}
+```
+
+**Directional blocks with auto-connect**:
+```json
+{
+  "Name": "Fenced Road",
+  "Description": "Road with auto-connecting oak fences on sides",
+  "Slices": [ "FGF,FGF,_P_,___" ],
+  "Width": 3,
+  "Height": 4,
+  "Blocks": {
+    "F": "game:woodenfence-oak|auto",
+    "G": "game:gravel-granite",
+    "P": "player"
+  }
+}
+```
+
+**Directional stairs pattern** (wildcards + directives):
+```json
+{
+  "Name": "Stair Edged Road",
+  "Description": "Road with stairs stepping down on each side",
+  "Slices": [ "GGG,LGR,_P_,___" ],
+  "Width": 3,
+  "Height": 4,
+  "Blocks": {
+    "L": "cobblestonestairs-*|up|l",
+    "R": "cobblestonestairs-*|up|r",
+    "G": "game:gravel-granite",
     "P": "player"
   }
 }

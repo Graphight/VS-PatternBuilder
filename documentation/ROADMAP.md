@@ -39,6 +39,21 @@
 -  Carve mode support: shows air blocks as semi-transparent glass
 -  Credit: Shader approach inspired by VanillaBuilding: Expanded mod by dsisco
 
+### Phase 4 Tier 2: Directional Block Support (2025-12-21)
+**Relative direction directives - reusable patterns in any direction!**
+
+-  Directive syntax: `blockcode|directive1|directive2` (e.g., `game:log-placed|horizontal|f`)
+-  Relative directions (`|f|b|l|r`) translate based on player movement (forward/back/left/right)
+-  Absolute directions (`|up|down`) for vertical placement
+-  Axis hints (`|horizontal|vertical`) for 2-axis blocks like logs
+-  Auto-connect directive (`|auto`) for fences/walls (triggers neighbor updates)
+-  Supports 2-axis blocks (logs: `-ns`/`-ew` variants)
+-  Supports 4-direction blocks (stairs: `-north`/`-south`/`-east`/`-west` variants)
+-  Works with wildcards: `cobblestonestairs-*|up|f` (any stone type, facing forward)
+-  Preview rendering supports directional blocks
+-  On-demand variant resolution using brute-force `SearchBlocks()` with candidates
+-  Server-side auto-connect via `TriggerNeighbourBlockUpdate()`
+
 ---
 
 ## Phase 4 Development Priorities
@@ -167,11 +182,12 @@ Based on dependencies and impact:
 - Works with both 2D and 3D patterns
 - Requires extensive testing on varied terrain
 
-**Item 5***: Directional block support (Tier 2)
-- Some blocks have inherent directions, how will these be placed
-- Some are easy like fences that have only a few options (standalone, N-S, E-W)
-- Some are hard like stairs (N-S, S-N, E-W, W-E, external, internal)
-- Some only have differences if they attach to things
+**Item 5 COMPLETE**: Directional block support (Tier 2)
+- Relative direction directives (`|f|b|l|r`) translate based on player movement
+- Supports 2-axis blocks (logs), 4-direction blocks (stairs), and auto-connect (fences/walls)
+- Works with wildcards: `cobblestonestairs-*|up|f`
+- Preview rendering fixed to support directional blocks
+- On-demand variant resolution using SearchBlocks() with candidate patterns
 
 **Item 6+**: In-game editor (Tier 3 - Nice to have)
 - Only tackle after core features are stable
@@ -236,10 +252,10 @@ Based on dependencies and impact:
 ## Active
 - When given an asymmetrical hoizontal pattern the system still thinks the player is in the center
 - Validation is skipped for blocks with wildcards ('*') which means players can put garbage in there
-- Preview mode doesn't work for directional blocks
 
 ## Fixed
 - ~~When sprinting some placements are missed~~ - Fixed with 100ms tick rate and 0.6 block threshold
 - ~~All patterns build below the player's feet~~ - Working as designed; P-marker in pattern controls vertical positioning
 - ~~Invalid block codes fail silently~~ - Fixed with pattern validation and chat warnings
 - ~~The reload command crashes the game~~ - Fixed by clean DLL reinstall
+- ~~Preview mode doesn't work for directional blocks~~ - Fixed by adding DirectionalBlockResolver.ResolveBlockId() to PreviewManager

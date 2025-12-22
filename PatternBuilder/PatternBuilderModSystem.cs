@@ -98,6 +98,16 @@ public class PatternBuilderModSystem : ModSystem
             blockAccessor.SetBlock(blockId, pos);
         }
 
+        if (message.AutoConnectPositions != null && message.AutoConnectPositions.Count > 0)
+        {
+            foreach (var serializedPos in message.AutoConnectPositions)
+            {
+                BlockPos pos = serializedPos.ToBlockPos();
+                blockAccessor.TriggerNeighbourBlockUpdate(pos);
+            }
+            Mod.Logger.Debug($"PatternBuilder: Triggered {message.AutoConnectPositions.Count} auto-connect updates for {fromPlayer.PlayerName}");
+        }
+
         Mod.Logger.Debug($"PatternBuilder: Placed {message.BlockIds.Count} blocks for {fromPlayer.PlayerName}");
     }
 
@@ -647,7 +657,8 @@ public class PatternBuilderModSystem : ModSystem
                     continue;
                 }
 
-                message.AddBlock(blockId, placePos);
+                bool shouldAutoConnect = DirectionalBlockResolver.ShouldAutoConnect(blockCode);
+                message.AddBlock(blockId, placePos, shouldAutoConnect);
 
                 if (!isCreative)
                 {

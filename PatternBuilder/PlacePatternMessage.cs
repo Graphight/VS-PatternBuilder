@@ -19,18 +19,28 @@ public class PlacePatternMessage
     [ProtoMember(4)]
     public Dictionary<string, int> RequiredPatterns { get; set; }
 
+    [ProtoMember(5)]
+    public List<SerializedBlockPos> AutoConnectPositions { get; set; }
+
     public PlacePatternMessage()
     {
         BlockIds = new List<int>();
         Positions = new List<SerializedBlockPos>();
         PlayerId = "";
         RequiredPatterns = new Dictionary<string, int>();
+        AutoConnectPositions = new List<SerializedBlockPos>();
     }
 
-    public void AddBlock(int blockId, BlockPos pos)
+    public void AddBlock(int blockId, BlockPos pos, bool shouldAutoConnect = false)
     {
         BlockIds.Add(blockId);
         Positions.Add(new SerializedBlockPos(pos));
+
+        if (shouldAutoConnect)
+        {
+            // Call the special helper method for adaptive blocks
+            AutoConnectPositions.Add(new SerializedBlockPos(pos));
+        }
     }
 }
 

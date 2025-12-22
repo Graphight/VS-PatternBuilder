@@ -142,6 +142,16 @@ namespace PatternBuilder
             return TryResolveVariant(directives.BaseBlockCode, absoluteDirection, directives, api);
         }
 
+        public static bool ShouldAutoConnect(string blockCodeWithDirectives)
+        {
+            if (string.IsNullOrEmpty(blockCodeWithDirectives))
+                return false;
+            
+            // Walls and fences are special, they can auto-arrange based on their neighbours
+            // We should use the built-in way to solve this instead of trying to implement ourselves 
+            return blockCodeWithDirectives.Contains("|auto");
+        }
+
         private static int? TryResolveVariant(string baseCode, CardinalDirection direction, BlockDirectives directives, ICoreAPI api)
         {
             string[] candidates = GenerateVariantCandidates(baseCode, direction, directives);

@@ -21,6 +21,9 @@ public static class TerrainDetector
             if (block == null)
                 continue;
 
+            if (ShouldIgnoreBlock(block))
+                continue;
+
             if (!IsAirOrReplaceable(block))
             {
                 return y + 1;
@@ -28,6 +31,26 @@ public static class TerrainDetector
         }
 
         return null;
+    }
+
+    private static bool ShouldIgnoreBlock(Block block)
+    {
+        if (block.BlockMaterial == EnumBlockMaterial.Leaves)
+            return true;
+
+        if (block.BlockMaterial == EnumBlockMaterial.Plant)
+            return true;
+
+        if (block.BlockMaterial == EnumBlockMaterial.Fire)
+            return true;
+
+        if (block.Code.Path.Contains("tallgrass"))
+            return true;
+
+        if (block.Code.Path.Contains("flower"))
+            return true;
+
+        return false;
     }
 
     private static bool IsAirOrReplaceable(Block block)

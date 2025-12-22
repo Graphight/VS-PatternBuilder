@@ -19,12 +19,15 @@ public enum CardinalDirection
 
 public class PatternBuilderModSystem : ModSystem
 {
+    private const double NormalPlacementThreshold = 0.6;
+
     private ICoreClientAPI clientApi;
     private ICoreServerAPI serverApi;
     private bool buildingEnabled = false;
     private BlockPos lastPlacementPos;
     private CardinalDirection? lastDirection;
     private CardinalDirection? forwardDirection;
+    private PatternType? lastPlacedPatternType;
     private long tickListenerId;
 
     private PatternManager patternManager;
@@ -354,14 +357,13 @@ public class PatternBuilderModSystem : ModSystem
             if (player?.Entity != null)
             {
                 lastPlacementPos = player.Entity.Pos.AsBlockPos;
-                terrainFollowingManager.Initialize(player.Entity.Pos.AsBlockPos.Y);
             }
         }
         else
         {
             lastDirection = null;
             forwardDirection = null;
-            terrainFollowingManager.Reset();
+            lastPlacedPatternType = null;
             previewManager.ClearPreview();
         }
     }
@@ -466,11 +468,41 @@ public class PatternBuilderModSystem : ModSystem
         // Calculate distance moved
         double distance = CalculateDistance(lastPlacementPos, currentPos);
 
-        // Check if we've moved far enough to place a new segment (>0.6 blocks)
-        if (distance > 0.6)
-        {
-            direction = CalculateDirection(lastPlacementPos, currentPos);
+        // Peek at movement direction to determine if we're descending
+        direction = CalculateDirection(lastPlacementPos, currentPos);
+        BlockPos placePos = OffsetPositionForward(currentPos, direction, 1);
 
+        // Peek at terrain to determine pattern type
+        var (_, peekPatternType) = terrainFollowingManager.GetAdjustedPlacementPosition(
+            placePos,
+            direction,
+            out string _
+        );
+
+        // Option B: Hybrid approach for descending stairs
+        // First descending stair uses distance threshold, subsequent use Y-change
+        bool shouldPlace = false;
+        if (peekPatternType == PatternType.TransitionDown)
+        {
+            if (lastPlacedPatternType != PatternType.TransitionDown)
+            {
+                // First descending stair: use normal distance threshold
+                shouldPlace = distance > NormalPlacementThreshold;
+            }
+            else
+            {
+                // Subsequent descending stairs: only place when Y actually decreases
+                shouldPlace = currentPos.Y < lastPlacementPos.Y;
+            }
+        }
+        else
+        {
+            // For ascending/flat, use normal distance threshold
+            shouldPlace = distance > NormalPlacementThreshold;
+        }
+
+        if (shouldPlace)
+        {
             if (!forwardDirection.HasValue)
             {
                 forwardDirection = direction;
@@ -479,9 +511,6 @@ public class PatternBuilderModSystem : ModSystem
             {
                 UpdateSliceIndexBasedOnDirection(forwardDirection.Value, direction);
             }
-
-            // Offset placement ahead of player (1 block in movement direction)
-            BlockPos placePos = OffsetPositionForward(currentPos, direction, 1);
 
             // PHASE 3: Adjust placement Y and determine pattern type (terrain following with transitions)
             var (adjustedPlacePos, patternType) = terrainFollowingManager.GetAdjustedPlacementPosition(
@@ -506,6 +535,7 @@ public class PatternBuilderModSystem : ModSystem
 
             lastDirection = direction;
             lastPlacementPos = currentPos.Copy();
+            lastPlacedPatternType = patternType;
         }
 
         // Always update preview when building is enabled (2 blocks ahead)

@@ -15,66 +15,49 @@ public enum PatternType
 public class TerrainFollowingManager
 {
     private readonly ICoreClientAPI api;
-    private int? currentElevation;
 
     public TerrainFollowingManager(ICoreClientAPI api)
     {
         this.api = api;
     }
 
-    public void Initialize(int startingY)
-    {
-        currentElevation = startingY;
-    }
-
-    public void Reset()
-    {
-        currentElevation = null;
-    }
-
     public (BlockPos adjustedPosition, PatternType patternType) GetAdjustedPlacementPosition(
         BlockPos basePosition,
         CardinalDirection direction,
-        out string statusMessage)
+        out string statusMessage
+    )
     {
-        if (!currentElevation.HasValue)
-        {
-            currentElevation = basePosition.Y;
-        }
-
         BlockPos lookaheadPos = OffsetPositionForward(basePosition, direction, 1);
         var blockAccessor = api.World.BlockAccessor;
         int? detectedGroundY = TerrainDetector.DetectGroundLevel(lookaheadPos, blockAccessor);
 
         PatternType patternType = PatternType.Normal;
-        int placementY = currentElevation.Value;
+        int placementY = basePosition.Y;
 
         if (detectedGroundY.HasValue)
         {
-            int delta = detectedGroundY.Value - currentElevation.Value;
+            int delta = detectedGroundY.Value - placementY;
 
             if (delta > 0)
             {
-                currentElevation++;
-                placementY = currentElevation.Value;
+                placementY += 1; // Place the block one above feet level so the player ascends
                 patternType = PatternType.TransitionUp;
-                statusMessage = $"[Terrain] Stepping UP to Y={currentElevation.Value} (target={detectedGroundY.Value}, remaining={delta - 1})";
+                statusMessage = $"[Terrain] Stepping UP at Y={placementY} (target={detectedGroundY.Value}, delta={delta})";
             }
-            else if (delta < -1)
+            else if (delta <= -1)
             {
-                placementY = currentElevation.Value;
-                currentElevation--;
                 patternType = PatternType.TransitionDown;
-                statusMessage = $"[Terrain] Stepping DOWN from Y={placementY} to Y={currentElevation.Value} (target={detectedGroundY.Value}, remaining={Math.Abs(delta + 1)})";
+                // Place the block at the player's feet when descending
+                statusMessage = $"[Terrain] Stepping DOWN at Y={placementY} (target={detectedGroundY.Value}, delta={delta})";
             }
             else
             {
-                statusMessage = $"[Terrain] Maintaining Y={currentElevation.Value} (terrain matched)";
+                statusMessage = $"[Terrain] Maintaining Y={placementY} (terrain matched)";
             }
         }
         else
         {
-            statusMessage = $"[Terrain] No ground detected, maintaining Y={currentElevation.Value}";
+            statusMessage = $"[Terrain] No ground detected, maintaining Y={placementY}";
         }
 
         var adjustedPos = new BlockPos(basePosition.X, placementY, basePosition.Z);

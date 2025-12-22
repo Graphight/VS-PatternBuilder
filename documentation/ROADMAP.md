@@ -234,7 +234,8 @@ Based on dependencies and impact:
 # Known Bugs
 
 ## Active
-None currently!
+- When given an asymmetrical hoizontal pattern the system still thinks the player is in the center
+- Validation is skipped for blocks with wildcards ('*') which means players can put garbage in there
 
 ## Fixed
 - ~~When sprinting some placements are missed~~ - Fixed with 100ms tick rate and 0.6 block threshold

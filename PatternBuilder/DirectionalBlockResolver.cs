@@ -9,8 +9,8 @@ namespace PatternBuilder
     public class BlockDirectives
     {
         public string BaseBlockCode { get; set; }
-        public string RelativeDirection { get; set; }
-        public string AxisHint { get; set; }
+        public string? RelativeDirection { get; set; }
+        public string? AxisHint { get; set; }
         public bool IsAuto { get; set; }
 
         public BlockDirectives(string baseBlockCode)
@@ -103,7 +103,7 @@ namespace PatternBuilder
             return directives;
         }
 
-        public static CardinalDirection TranslateRelativeToAbsolute(string relativeDirection, CardinalDirection playerDirection)
+        public static CardinalDirection TranslateRelativeToAbsolute(string? relativeDirection, CardinalDirection playerDirection)
         {
             if (string.IsNullOrEmpty(relativeDirection))
             {

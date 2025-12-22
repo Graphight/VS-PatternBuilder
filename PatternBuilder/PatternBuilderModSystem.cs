@@ -33,6 +33,7 @@ public class PatternBuilderModSystem : ModSystem
 
     private PreviewRenderer previewRenderer;
     private PreviewManager previewManager;
+    private TerrainFollowingManager terrainFollowingManager;
 
     private IClientNetworkChannel clientChannel;
     private IServerNetworkChannel serverChannel;
@@ -129,6 +130,7 @@ public class PatternBuilderModSystem : ModSystem
         api.Event.RegisterRenderer(previewRenderer, EnumRenderStage.Opaque, "patternbuilder_preview");
 
         previewManager = new PreviewManager(api, previewRenderer, patternManager, blockIdCache);
+        terrainFollowingManager = new TerrainFollowingManager(api);
 
         RegisterCommands(api);
 
@@ -352,12 +354,14 @@ public class PatternBuilderModSystem : ModSystem
             if (player?.Entity != null)
             {
                 lastPlacementPos = player.Entity.Pos.AsBlockPos;
+                terrainFollowingManager.Initialize(player.Entity.Pos.AsBlockPos.Y);
             }
         }
         else
         {
             lastDirection = null;
             forwardDirection = null;
+            terrainFollowingManager.Reset();
             previewManager.ClearPreview();
         }
     }
@@ -461,24 +465,17 @@ public class PatternBuilderModSystem : ModSystem
             // Offset placement ahead of player (1 block in movement direction)
             BlockPos placePos = OffsetPositionForward(currentPos, direction, 1);
 
-            // PHASE 1: Detect terrain 2 blocks ahead (lookahead for planning)
-            BlockPos lookaheadPos = OffsetPositionForward(currentPos, direction, 2);
-            var blockAccessor = clientApi.World.BlockAccessor;
-            int? detectedGroundY = TerrainDetector.DetectGroundLevel(lookaheadPos, blockAccessor);
+            // PHASE 2: Adjust placement Y based on terrain (terrain following)
+            BlockPos adjustedPlacePos = terrainFollowingManager.GetAdjustedPlacementPosition(
+                placePos,
+                direction,
+                out string terrainStatus
+            );
 
-            if (detectedGroundY.HasValue)
-            {
-                int currentY = placePos.Y;
-                int delta = detectedGroundY.Value - currentY;
-                clientApi.ShowChatMessage($"[Terrain] Ahead: Y={detectedGroundY.Value} (current={currentY}, delta={delta:+#;-#;0})");
-            }
-            else
-            {
-                clientApi.ShowChatMessage($"[Terrain] No ground detected ahead");
-            }
+            clientApi.ShowChatMessage(terrainStatus);
 
-            // Place the road pattern ahead of player
-            PlaceRoadPattern(placePos, direction);
+            // Place the road pattern at adjusted elevation
+            PlaceRoadPattern(adjustedPlacePos, direction);
 
             lastDirection = direction;
             lastPlacementPos = currentPos.Copy();

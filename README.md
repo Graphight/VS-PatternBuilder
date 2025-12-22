@@ -3,7 +3,7 @@
 A Vintage Story mod that automates placement of repeating block patterns (roads, walls, tunnels) to reduce late-game construction tedium.
 
 ![Game Version](https://img.shields.io/badge/Vintage%20Story-1.21.5+-blue)
-![Version](https://img.shields.io/badge/Alpha-0.4.4-red)
+![Version](https://img.shields.io/badge/Alpha-0.4.5-red)
 
 [//]: # (![Multiplayer]&#40;https://img.shields.io/badge/Multiplayer-supported-green&#41;)
 

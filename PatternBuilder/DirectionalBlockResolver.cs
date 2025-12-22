@@ -182,14 +182,31 @@ namespace PatternBuilder
                 return new[] {
                     $"{baseCode}-ud",
                     $"{baseCode}-ud-*",
-                    $"{baseCode}-updown",
-                    $"{baseCode}-updown-*",
+                    $"{baseCode}-up",
+                    $"{baseCode}-up-*",
+                    $"{baseCode}-down",
+                    $"{baseCode}-down-*",
                     $"{baseCode}-vertical",
                     $"{baseCode}-vertical-*"
                 };
             }
 
-            return new[] { $"{baseCode}*" };
+            string dirAbbr = direction.ToString().ToLower()[0].ToString();
+            string dirFull = direction.ToString().ToLower();
+
+            return new[] {
+                $"{baseCode}-up-{dirFull}-*",
+                $"{baseCode}-up-{dirAbbr}-*",
+                $"{baseCode}-down-{dirFull}-*",
+                $"{baseCode}-down-{dirAbbr}-*",
+                $"{baseCode}-*-{dirFull}-*",
+                $"{baseCode}-*-{dirAbbr}-*",
+                $"{baseCode}-{dirAbbr}",
+                $"{baseCode}-{dirAbbr}-*",
+                $"{baseCode}-{dirFull}",
+                $"{baseCode}-{dirFull}-*",
+                $"{baseCode}*"
+            };
         }
 
         private static string ExpandAxis(string axis)

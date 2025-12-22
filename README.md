@@ -11,39 +11,19 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 
 ## Feature Status (shorthand roadmap)
 
-- [x] Basic road placement prototype
-- [x] Multi-pattern system with JSON configs
+- [x] Define custom block patterns in JSON files to place in world
+- [x] Multi-pattern system with JSON configs (can hot-reload in-game)
 - [x] Adaptive roads vs tunnel carving (additive vs destructive)
 - [x] Pattern validation
 - [x] Survival mode support with inventory consumption
 - [x] 3D patterns
-- [x] Pattern preview
-- [x] Directional blocks
+- [x] Pattern preview - ghost images two steps infront of user
+- [x] Directional block support Use relative directions (`|f|b|l|r`) in patterns - adapts to travel direction
 - [ ] Terrain following
 - [ ] In-game editor
 - [ ] Tool-durability use
 
 For more information look at the [ROADMAP.md](documentation/ROADMAP.md)
-
----
-
-## Features
-
-- **Pattern-based building**: Define custom block patterns in JSON files
-- **50 pattern slots**: Quick-switch between different patterns (configurable)
-- **Movement-based placement**: Walk to build - patterns follow your movement
-- **Directional awareness**: Patterns orient based on movement direction (N/S/E/W)
-- **Directional block support**: Use relative directions (`|f|b|l|r`) in patterns - automatically adapts to travel direction
-- **Auto-connect blocks**: Fences and walls snap to connected forms immediately (`|auto` directive)
-- **3D slice patterns**: Multi-slice patterns with bidirectional traversal for periodic variation (lamp posts, markers, etc.)
-- **Pattern preview**: See semi-transparent preview blocks 2 positions ahead with color-coded tinting (green=air, blue=replacing, grey=same)
-- **Adaptive & Carve modes**: Patterns can mold to terrain or carve through it
-- **Survival mode support**: Consumes blocks from inventory, works in both creative and survival
-- **Wildcard patterns**: Match any block variant (e.g., `game:soil-*` matches all soil types)
-- **Smart consumption**: Only uses materials for blocks that actually get placed
-- **Hot-reload patterns**: Edit patterns while game is running
-- **Pattern validation**: Automatic validation with helpful error messages
-- **VS recipe syntax**: Familiar pattern format for Vintage Story modders
 
 ---
 

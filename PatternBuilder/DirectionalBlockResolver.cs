@@ -186,8 +186,6 @@ namespace PatternBuilder
                     $"{baseCode}-up-*",
                     $"{baseCode}-down",
                     $"{baseCode}-down-*",
-                    $"{baseCode}-vertical",
-                    $"{baseCode}-vertical-*"
                 };
             }
 

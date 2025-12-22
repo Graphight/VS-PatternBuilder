@@ -110,7 +110,7 @@ namespace PatternBuilder
 
             relativeDirection = relativeDirection.ToLower().Trim();
 
-            if (relativeDirection == "up" || relativeDirection == "down")
+            if (relativeDirection is "up" or "down")
             {
                 return playerDirection;
             }

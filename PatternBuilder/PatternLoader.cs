@@ -159,7 +159,7 @@ public class PatternLoader
                         Blocks = new Dictionary<char, string>()
                         {
                             { 'D', "game:soil-medium-normal" },
-                            { 'S', "game:cobblestonestairs-*|up|f" },
+                            { 'S', "game:cobblestonestairs-granite-*|up|f" },
                             { 'P', "player" }
                         }
                     },
@@ -172,7 +172,7 @@ public class PatternLoader
                         Blocks = new Dictionary<char, string>()
                         {
                             { 'D', "game:soil-medium-normal" },
-                            { 'S', "game:cobblestonestairs-*|up|b" },
+                            { 'S', "game:cobblestonestairs-granite-*|up|b" },
                             { 'P', "player" }
                         }
                     }

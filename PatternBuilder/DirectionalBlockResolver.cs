@@ -28,8 +28,8 @@ namespace PatternBuilder
         {
             { (CardinalDirection.North, "f"), CardinalDirection.North },
             { (CardinalDirection.North, "b"), CardinalDirection.South },
-            { (CardinalDirection.North, "l"), CardinalDirection.West },
-            { (CardinalDirection.North, "r"), CardinalDirection.East },
+            { (CardinalDirection.North, "l"), CardinalDirection.East },
+            { (CardinalDirection.North, "r"), CardinalDirection.West },
 
             { (CardinalDirection.East, "f"), CardinalDirection.East },
             { (CardinalDirection.East, "b"), CardinalDirection.West },
@@ -38,8 +38,8 @@ namespace PatternBuilder
 
             { (CardinalDirection.South, "f"), CardinalDirection.South },
             { (CardinalDirection.South, "b"), CardinalDirection.North },
-            { (CardinalDirection.South, "l"), CardinalDirection.East },
-            { (CardinalDirection.South, "r"), CardinalDirection.West },
+            { (CardinalDirection.South, "l"), CardinalDirection.West },
+            { (CardinalDirection.South, "r"), CardinalDirection.East },
 
             { (CardinalDirection.West, "f"), CardinalDirection.West },
             { (CardinalDirection.West, "b"), CardinalDirection.East },

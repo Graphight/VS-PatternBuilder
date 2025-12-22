@@ -90,7 +90,19 @@ public class PreviewManager
                     continue;
 
                 int blockId;
-                if (resolvedBlockIds != null && resolvedBlockIds.TryGetValue(blockCode, out int resolvedId))
+                if (blockCode.Contains("|"))
+                {
+                    var resolvedDirectionalId = DirectionalBlockResolver.ResolveBlockId(blockCode, direction, api);
+                    if (resolvedDirectionalId.HasValue)
+                    {
+                        blockId = resolvedDirectionalId.Value;
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+                else if (resolvedBlockIds != null && resolvedBlockIds.TryGetValue(blockCode, out int resolvedId))
                 {
                     blockId = resolvedId;
                 }

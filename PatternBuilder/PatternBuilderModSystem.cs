@@ -112,10 +112,7 @@ public class PatternBuilderModSystem : ModSystem
                 BlockPos pos = serializedPos.ToBlockPos();
                 blockAccessor.TriggerNeighbourBlockUpdate(pos);
             }
-            Mod.Logger.Debug($"PatternBuilder: Triggered {message.AutoConnectPositions.Count} auto-connect updates for {fromPlayer.PlayerName}");
         }
-
-        Mod.Logger.Debug($"PatternBuilder: Placed {message.BlockIds.Count} blocks for {fromPlayer.PlayerName}");
     }
 
     public override void StartClientSide(ICoreClientAPI api)
@@ -157,13 +154,6 @@ public class PatternBuilderModSystem : ModSystem
         var loadedPatterns = patternLoader.LoadAllPatterns(configPath);
 
         patternManager.LoadPatterns(loadedPatterns);
-
-        var patternNames = patternManager.GetAllPatternNames();
-        Mod.Logger.Notification($"PatternBuilder: Available patterns:");
-        foreach (var kvp in patternNames)
-        {
-            Mod.Logger.Notification($"  Slot {kvp.Key}: {kvp.Value}");
-        }
 
         foreach (var pattern in loadedPatterns.Values)
         {
@@ -394,15 +384,12 @@ public class PatternBuilderModSystem : ModSystem
             {
                 blockIdCache["air"] = airBlock.BlockId;
                 cachedCount++;
-                Mod.Logger.Notification($"PatternBuilder: Cached air block for carve mode (ID: {airBlock.BlockId})");
             }
             else
             {
                 Mod.Logger.Warning("PatternBuilder: Failed to get air block for carve mode!");
             }
         }
-
-        Mod.Logger.Notification($"PatternBuilder: Cached {cachedCount} block IDs for pattern '{pattern.Name}' (Mode: {pattern.Mode})");
     }
 
     private int CacheBlocksFromDictionary(Dictionary<char, string> blocks)
@@ -478,8 +465,7 @@ public class PatternBuilderModSystem : ModSystem
         // Peek at terrain to determine pattern type
         var (_, peekPatternType) = terrainFollowingManager.GetAdjustedPlacementPosition(
             placePos,
-            direction,
-            out string _
+            direction
         );
 
         // Adjust tick rate based on terrain type (faster polling for descending)
@@ -521,11 +507,8 @@ public class PatternBuilderModSystem : ModSystem
             // PHASE 3: Adjust placement Y and determine pattern type (terrain following with transitions)
             var (adjustedPlacePos, patternType) = terrainFollowingManager.GetAdjustedPlacementPosition(
                 placePos,
-                direction,
-                out string terrainStatus
+                direction
             );
-
-            clientApi.ShowChatMessage(terrainStatus);
 
             // Select pattern based on terrain
             var basePattern = patternManager.GetCurrentPattern();
@@ -660,12 +643,7 @@ public class PatternBuilderModSystem : ModSystem
                 var availableBlocks = InventoryHelper.CountBlocksInInventory(player, clientApi);
                 resolvedBlockIds = InventoryHelper.ResolvePatternToBlockIds(requiredPatterns, availableBlocks, clientApi);
                 cachedInventoryChecks--;
-                Mod.Logger.Debug($"PatternBuilder: Using cached check ({cachedInventoryChecks} remaining)");
             }
-        }
-        else
-        {
-            Mod.Logger.Debug("PatternBuilder: Creative mode - skipping inventory check");
         }
 
         int patternWidth = currentPattern.Width;
@@ -708,7 +686,6 @@ public class PatternBuilderModSystem : ModSystem
                     if (resolvedId.HasValue)
                     {
                         blockId = resolvedId.Value;
-                        Mod.Logger.Debug($"PatternBuilder: Resolved '{blockCode}' + {direction} → blockId:{blockId}");
                     }
                     else
                     {

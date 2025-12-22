@@ -23,8 +23,7 @@ public class TerrainFollowingManager
 
     public (BlockPos adjustedPosition, PatternType patternType) GetAdjustedPlacementPosition(
         BlockPos basePosition,
-        CardinalDirection direction,
-        out string statusMessage
+        CardinalDirection direction
     )
     {
         BlockPos lookaheadPos = OffsetPositionForward(basePosition, direction, 1);
@@ -40,24 +39,13 @@ public class TerrainFollowingManager
 
             if (delta > 0)
             {
-                placementY += 1; // Place the block one above feet level so the player ascends
+                placementY += 1;
                 patternType = PatternType.TransitionUp;
-                statusMessage = $"[Terrain] Stepping UP at Y={placementY} (target={detectedGroundY.Value}, delta={delta})";
             }
             else if (delta <= -1)
             {
                 patternType = PatternType.TransitionDown;
-                // Place the block at the player's feet when descending
-                statusMessage = $"[Terrain] Stepping DOWN at Y={placementY} (target={detectedGroundY.Value}, delta={delta})";
             }
-            else
-            {
-                statusMessage = $"[Terrain] Maintaining Y={placementY} (terrain matched)";
-            }
-        }
-        else
-        {
-            statusMessage = $"[Terrain] No ground detected, maintaining Y={placementY}";
         }
 
         var adjustedPos = new BlockPos(basePosition.X, placementY, basePosition.Z);

@@ -20,6 +20,8 @@ public enum CardinalDirection
 public class PatternBuilderModSystem : ModSystem
 {
     private const double NormalPlacementThreshold = 0.6;
+    private const int NormalTickIntervalMs = 100;
+    private const int FastTickIntervalMs = 50;
 
     private ICoreClientAPI clientApi;
     private ICoreServerAPI serverApi;
@@ -29,6 +31,7 @@ public class PatternBuilderModSystem : ModSystem
     private CardinalDirection? forwardDirection;
     private PatternType? lastPlacedPatternType;
     private long tickListenerId;
+    private int currentTickInterval = NormalTickIntervalMs;
 
     private PatternManager patternManager;
     private PatternLoader patternLoader;
@@ -137,7 +140,7 @@ public class PatternBuilderModSystem : ModSystem
 
         RegisterCommands(api);
 
-        tickListenerId = clientApi.Event.RegisterGameTickListener(OnGameTick, 100);
+        tickListenerId = clientApi.Event.RegisterGameTickListener(OnGameTick, NormalTickIntervalMs);
 
         Mod.Logger.Notification("PatternBuilder loaded - Use .pb help for commands");
     }
@@ -479,6 +482,9 @@ public class PatternBuilderModSystem : ModSystem
             out string _
         );
 
+        // Adjust tick rate based on terrain type (faster polling for descending)
+        AdjustTickRateForPatternType(peekPatternType);
+
         // Option B: Hybrid approach for descending stairs
         // First descending stair uses distance threshold, subsequent use Y-change
         bool shouldPlace = false;
@@ -594,6 +600,18 @@ public class PatternBuilderModSystem : ModSystem
         else
         {
             forwardDirection = current;
+        }
+    }
+
+    private void AdjustTickRateForPatternType(PatternType patternType)
+    {
+        int targetInterval = patternType == PatternType.TransitionDown ? FastTickIntervalMs : NormalTickIntervalMs;
+
+        if (currentTickInterval != targetInterval)
+        {
+            clientApi.Event.UnregisterGameTickListener(tickListenerId);
+            tickListenerId = clientApi.Event.RegisterGameTickListener(OnGameTick, targetInterval);
+            currentTickInterval = targetInterval;
         }
     }
 

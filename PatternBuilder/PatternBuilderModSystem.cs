@@ -441,10 +441,6 @@ public class PatternBuilderModSystem : ModSystem
             direction = CardinalDirection.North;
         }
 
-        // Always update preview when building is enabled (2 blocks ahead)
-        BlockPos previewPos = OffsetPositionForward(currentPos, direction, 2);
-        previewManager.UpdatePreview(previewPos, direction);
-
         // Calculate distance moved
         double distance = CalculateDistance(lastPlacementPos, currentPos);
 
@@ -465,19 +461,20 @@ public class PatternBuilderModSystem : ModSystem
             // Offset placement ahead of player (1 block in movement direction)
             BlockPos placePos = OffsetPositionForward(currentPos, direction, 1);
 
-            // PHASE 1: Detect terrain (logging only, doesn't affect placement yet)
+            // PHASE 1: Detect terrain 2 blocks ahead (lookahead for planning)
+            BlockPos lookaheadPos = OffsetPositionForward(currentPos, direction, 2);
             var blockAccessor = clientApi.World.BlockAccessor;
-            int? detectedGroundY = TerrainDetector.DetectGroundLevel(placePos, blockAccessor);
+            int? detectedGroundY = TerrainDetector.DetectGroundLevel(lookaheadPos, blockAccessor);
 
             if (detectedGroundY.HasValue)
             {
                 int currentY = placePos.Y;
                 int delta = detectedGroundY.Value - currentY;
-                clientApi.ShowChatMessage($"[Terrain] Ground at Y={detectedGroundY.Value} (current={currentY}, delta={delta:+#;-#;0})");
+                clientApi.ShowChatMessage($"[Terrain] Ahead: Y={detectedGroundY.Value} (current={currentY}, delta={delta:+#;-#;0})");
             }
             else
             {
-                clientApi.ShowChatMessage($"[Terrain] No ground detected within range");
+                clientApi.ShowChatMessage($"[Terrain] No ground detected ahead");
             }
 
             // Place the road pattern ahead of player
@@ -486,6 +483,10 @@ public class PatternBuilderModSystem : ModSystem
             lastDirection = direction;
             lastPlacementPos = currentPos.Copy();
         }
+
+        // Always update preview when building is enabled (2 blocks ahead)
+        BlockPos previewPos = OffsetPositionForward(currentPos, direction, 2);
+        previewManager.UpdatePreview(previewPos, direction);
     }
 
     private double CalculateDistance(BlockPos from, BlockPos to)

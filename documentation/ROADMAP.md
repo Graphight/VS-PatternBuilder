@@ -5,14 +5,17 @@
 ### Tier 2: Core Usability (Major UX Improvements)
 **These make the mod work in real-world scenarios, not just flat creative builds.**
 
-1. **Terrain following** (raycasting for ground level)
-   - Raycast downward from pattern position to find ground
-   - Adjust Y-offset dynamically based on terrain height
-   - Handle gaps (bridges) vs hills intelligently
-   - Configurable max drop/climb per segment
-   - **Impact**: Makes mod work on natural terrain, not just flat ground
-   - **Complexity**: Medium-High - raycasting API, Y-offset logic, edge cases
-   - **Risk**: Medium - could conflict with existing placement logic
+1. **Terrain following** (raycasting for ground level) - ✅ **MOSTLY COMPLETE**
+   - ✅ Raycast downward from pattern position to find ground (2 blocks ahead)
+   - ✅ Adjust Y-offset dynamically based on terrain height
+   - ✅ Transition layers for stairs (TransitionUpLayer/TransitionDownLayer)
+   - ✅ Foliage filtering (ignores trees, plants, decorative blocks)
+   - ✅ Ascending stairs (works perfectly)
+   - ✅ Descending stairs (hybrid approach - works at walking speed)
+   - ✅ Dynamic tick rates (50ms descending, 100ms normal)
+   - ⚠️ **Known limitation**: Sprinting downhill skips 20-30% of stairs (acceptable)
+   - 🔄 **Remaining work**: Edge case testing (cliffs, caves, water), transition layer validation
+   - **Status**: Core functionality complete (v0.4.5), polish/edge cases deferred to user feedback
 
 ### Tier 3: Advanced Features (Nice to Have)
 **Polish and power-user features that enhance but don't fundamentally change usage.**
@@ -45,15 +48,15 @@
    - Configurable undo history depth
    - **Complexity**: Medium - placement history tracking, bulk block removal
 
---- 
+---
 
 ### Key Questions to Answer
 
-**Terrain Following**:
-- Max climb/drop per segment? (suggest 2-3 blocks)
-- How to handle caves/overhangs? (raycast from player height downward)
-- Should bridges auto-span gaps? (phase 5 feature, not initial implementation)
-- Stairs vs ramps on slopes? (use pattern definition, don't auto-generate)
+**Terrain Following** (mostly answered):
+- ~~Max climb/drop per segment?~~ **ANSWER**: One block at a time (via transition patterns)
+- ~~How to handle caves/overhangs?~~ **ANSWER**: Raycast from lookahead position downward
+- ~~Stairs vs ramps on slopes?~~ **ANSWER**: Use pattern definition (TransitionUpLayer/TransitionDownLayer)
+- Should bridges auto-span gaps? **ANSWER**: Use "carve" mode instead as this will keep y-level
 
 **In-game Editor**:
 - Replace JSON or supplement? (supplement - JSON should remain primary)
@@ -69,6 +72,8 @@
 ## Active
 - When given an asymmetrical hoizontal pattern the system still thinks the player is in the center
 - Validation is skipped for blocks with wildcards ('*') which means players can put garbage in there
+- No validation that TransitionUpLayer/TransitionDownLayer exist when terrain following is enabled
+- Sprinting down slopes will skip some transition layer placements (I spent way too long trying to fix this so gave up)
 
 ## Fixed
 - ~~When sprinting some placements are missed~~ - Fixed with 100ms tick rate and 0.6 block threshold
@@ -76,3 +81,11 @@
 - ~~Invalid block codes fail silently~~ - Fixed with pattern validation and chat warnings
 - ~~The reload command crashes the game~~ - Fixed by clean DLL reinstall
 - ~~Preview mode doesn't work for directional blocks~~ - Fixed by adding DirectionalBlockResolver.ResolveBlockId() to PreviewManager
+- ~~Trees and plants cause false elevation changes~~ - Fixed with material-based foliage filtering (v0.4.5)
+- ~~Descending stairs don't place~~ - Fixed with Option B hybrid approach (v0.4.5)
+
+## Known Limitations (Acceptable - Documented)
+- **Sprinting downhill**: Skips 20-30% of descending stairs when sprinting (works perfectly at walking speed)
+  - **Why**: Tick rate (50ms) can't catch all Y-changes at sprint speed (~7-8 blocks/sec)
+  - **Mitigation**: Walk (don't sprint) when descending for best results
+  - **Status**: Documented in README, won't fix (over-engineering for edge case)

@@ -19,11 +19,14 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 - [x] 3D patterns
 - [x] Pattern preview - ghost images two steps infront of user
 - [x] Directional block support Use relative directions (`|f|b|l|r`) in patterns - adapts to travel direction
-- [ ] Terrain following
+- [x] Terrain following - roads adapt to elevation changes with stairs (walk, don't sprint on slopes)
 - [ ] In-game editor
 - [ ] Tool-durability use
 
 For more information look at the [ROADMAP.md](documentation/ROADMAP.md)
+
+> [!CAUTION]
+> Running down slopes will skip placements, it is better to walk
 
 ---
 
@@ -155,6 +158,45 @@ Patterns are stored in JSON files at:
 }
 ```
 
+**Terrain-following pattern** (adapts to slopes):
+```json
+{
+  "Name": "Adaptive Road with Stairs",
+  "Description": "Road that adapts to terrain with stair transitions",
+  "Slices": ["DDD,CCC,_P_,___"],
+  "Width": 3,
+  "Height": 4,
+  "Mode": "adaptive",
+  "Blocks": {
+    "D": "game:soil-medium-normal",
+    "C": "game:cobblestone-granite",
+    "P": "player"
+  },
+  "TransitionUpLayer": {
+    "Slices": ["DDD,SSS,_P_,___"],
+    "Width": 3,
+    "Height": 4,
+    "Mode": "carve",
+    "Blocks": {
+      "D": "game:soil-medium-normal",
+      "S": "game:cobblestonestairs-*|up|f",
+      "P": "player"
+    }
+  },
+  "TransitionDownLayer": {
+    "Slices": ["DDD,SSS,_P_,___"],
+    "Width": 3,
+    "Height": 4,
+    "Mode": "carve",
+    "Blocks": {
+      "D": "game:soil-medium-normal",
+      "S": "game:cobblestonestairs-*|up|b",
+      "P": "player"
+    }
+  }
+}
+```
+
 **Pattern syntax**:
 - Slices: Array of 2D patterns (one entry = 2D pattern, multiple entries = 3D pattern)
 - Each slice uses comma-separated Y-layers (bottom to top)
@@ -163,6 +205,8 @@ Patterns are stored in JSON files at:
 - `P` = player feet position (required in each slice for Y-offset)
 - `*` = wildcard (matches any variant, e.g., `game:soil-*`)
 - `Mode` = "adaptive" (molds to terrain) or "carve" (cuts through terrain)
+- `TransitionUpLayer` = Pattern for ascending slopes (optional, uses stairs facing forward `|f`)
+- `TransitionDownLayer` = Pattern for descending slopes (optional, uses stairs facing backward `|b`)
 
 **3D pattern behavior**:
 - Walk forward: cycles through slices (0,1,2...,N,0)
@@ -241,6 +285,7 @@ However, I have never managed to get this to work (conflicting `.dll` files) so 
 - Use `.pb info` to see current pattern details and material requirements
 - Walking over existing patterns won't waste materials
 - Enable preview with `.pb preview` to see what will be placed before it happens
+- **Terrain following**: Walk (don't sprint) on slopes for best stair placement. Sprinting downhill may skip some stairs.
 
 **Pattern Preview**:
 - Preview appears 2 blocks ahead of your movement

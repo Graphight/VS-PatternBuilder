@@ -2,21 +2,23 @@
 
 A Vintage Story mod that automates placement of repeating block patterns (roads, walls, tunnels) to reduce late-game construction tedium.
 
-## Status
+---
 
-**Phase 1**: ✅ Complete - Basic road placement prototype
+## Status (roadmap)
 
-**Phase 2**: ✅ Complete - Multi-pattern system with JSON configs
+-[X]  Complete - Basic road placement prototype
+-[X]  Complete - Multi-pattern system with JSON configs
+-[X]  Complete - Advanced features (carve mode, validation, performance
+-[X]  Complete - Survival mode support with inventory consumption
+-[X]  Complete - 3D patterns
+-[X] Complete - Pattern preview
+-[X]  Complete - Directional blocks
+-[ ] Planned - Terrain following
+-[ ] Planned - in-game editor
 
-**Phase 3**: ✅ Complete - Advanced features (carve mode, validation, performance)
+For more information look at the [ROADMAP.md](documentation/ROADMAP.md)
 
-**Phase 4 Tier 1**: ✅ Complete - Survival mode support with inventory consumption
-
-**Phase 4 Tier 2**: ✅ Complete - 3D patterns + Pattern preview + Directional blocks
-
-**Phase 4 Tier 2**: Planned - Terrain following 
-
-**Phase 4 Tier 3**: Planned - in-game editor
+---
 
 ## Features
 
@@ -34,8 +36,9 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 - **Smart consumption**: Only uses materials for blocks that actually get placed
 - **Hot-reload patterns**: Edit patterns while game is running
 - **Pattern validation**: Automatic validation with helpful error messages
-- **Persistent placement**: Blocks remain after world reload
 - **VS recipe syntax**: Familiar pattern format for Vintage Story modders
+
+---
 
 ## Commands
 
@@ -50,6 +53,8 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 .pb reload       Reload patterns from disk
 .pb preview      Toggle pattern preview on/off
 ```
+
+---
 
 ## Pattern Files
 
@@ -173,10 +178,12 @@ Patterns are stored in JSON files at:
 - `Mode` = "adaptive" (molds to terrain) or "carve" (cuts through terrain)
 
 **3D pattern behavior**:
-- Walk forward: cycles through slices (0→1→2...→N→0)
-- Walk backward: reverses through slices (N→...→2→1→0→N)
+- Walk forward: cycles through slices (0,1,2...,N,0)
+- Walk backward: reverses through slices (N,...,2,1,0,N)
 - Turn left/right: maintains current slice (no slice change)
 - Pattern switch: resets to slice 0
+
+---
 
 ## Installation
 
@@ -184,6 +191,8 @@ Patterns are stored in JSON files at:
 2. Place `patternbuilder` folder in your VintagestoryData/Mods directory
 3. Launch Vintage Story
 4. Default patterns will be created automatically on first run
+
+---
 
 ## Building from Source
 
@@ -219,7 +228,10 @@ dotnet build PatternBuilder/PatternBuilder.csproj -c Release
 dotnet clean  # Clean build artifacts
 ```
 
-**Hot-reload workflow**: After building, reload your world in Vintage Story (don't restart the game) and code changes take effect immediately. Some changes (like ModSystem initialization) may require a full game restart.
+**Hot-reload workflow**: In theory, after building and deploying, you should be able to reload your world in Vintage Story and the changes will apply. 
+However, I have never managed to get this to work (conflicting `.dll` files) so each build requires a full client restart.
+
+---
 
 ## Usage
 
@@ -251,6 +263,8 @@ dotnet clean  # Clean build artifacts
 - Works with both 2D and 3D patterns (shows current slice)
 - Toggle on/off anytime with `.pb preview`
 
+---
+
 ## Pattern Modes
 
 **Adaptive Mode** (default):
@@ -271,9 +285,12 @@ Set mode in pattern JSON:
 }
 ```
 
+--- 
 ## Known Issues
 
 See [documentation/ROADMAP.md](documentation/ROADMAP.md) for active issues and backlog.
+
+--- 
 
 ## Troubleshooting
 
@@ -295,9 +312,15 @@ See [documentation/ROADMAP.md](documentation/ROADMAP.md) for active issues and b
 
 **Debug logs**: Check `VintagestoryData/Logs/` for detailed error messages. Mod messages are prefixed with `[PatternBuilder]`.
 
+---
+
 ## Development
 
-- Built for Vintage Story 1.21.0+
+- Built for Vintage Story 1.21.5+ (version when I started working on it)
+
+Probably not backwards compatible, but, you are welcome to try it (please backup your worlds first)
+
+---
 
 ## License
 

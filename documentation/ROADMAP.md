@@ -71,32 +71,6 @@
    - **Complexity**: Medium - pattern parsing, slice cycling logic, backwards compatibility
    - **Risk**: Low - additive feature, doesn't break existing 2D patterns
 
-   **Example pattern**:
-   ```json
-   {
-     "Name": "Lamp Post Road",
-     "Width": 3,
-     "Height": 4,
-     "Depth": 8,
-     "Slices": [
-       "DDD,GGG,_P_,___",  // Repeat 7 times
-       "DDD,GGG,_P_,___",
-       "DDD,GGG,_P_,___",
-       "DDD,GGG,_P_,___",
-       "DDD,GGG,_P_,___",
-       "DDD,GGG,_P_,___",
-       "DDD,GGG,_P_,___",
-       "DDD,GGG,LPL,___"   // Lamp post on 8th slice
-     ],
-     "Blocks": {
-       "D": "game:soil-medium-normal",
-       "G": "game:gravel-granite",
-       "L": "game:lantern-iron-on",
-       "P": "player"
-     }
-   }
-   ```
-
 3. **Pattern preview** COMPLETE (2025-12-18)
    - Render semi-transparent preview blocks 2 blocks ahead of placement
    - Color-coded tinting system (green/blue/grey)
@@ -155,9 +129,6 @@
    - **Complexity**: Medium - placement history tracking, bulk block removal
 
 ## Implementation Notes
-
-### Recommended Order
-Based on dependencies and impact:
 
 ** Item 1 COMPLETE**: Inventory consumption (Tier 1)
 -  Survival/multiplayer use enabled

@@ -465,6 +465,21 @@ public class PatternBuilderModSystem : ModSystem
             // Offset placement ahead of player (1 block in movement direction)
             BlockPos placePos = OffsetPositionForward(currentPos, direction, 1);
 
+            // PHASE 1: Detect terrain (logging only, doesn't affect placement yet)
+            var blockAccessor = clientApi.World.BlockAccessor;
+            int? detectedGroundY = TerrainDetector.DetectGroundLevel(placePos, blockAccessor);
+
+            if (detectedGroundY.HasValue)
+            {
+                int currentY = placePos.Y;
+                int delta = detectedGroundY.Value - currentY;
+                clientApi.ShowChatMessage($"[Terrain] Ground at Y={detectedGroundY.Value} (current={currentY}, delta={delta:+#;-#;0})");
+            }
+            else
+            {
+                clientApi.ShowChatMessage($"[Terrain] No ground detected within range");
+            }
+
             // Place the road pattern ahead of player
             PlaceRoadPattern(placePos, direction);
 

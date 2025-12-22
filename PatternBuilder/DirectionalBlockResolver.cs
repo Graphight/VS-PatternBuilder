@@ -33,13 +33,13 @@ namespace PatternBuilder
 
             { (CardinalDirection.East, "f"), CardinalDirection.East },
             { (CardinalDirection.East, "b"), CardinalDirection.West },
-            { (CardinalDirection.East, "l"), CardinalDirection.North },
-            { (CardinalDirection.East, "r"), CardinalDirection.South },
+            { (CardinalDirection.East, "l"), CardinalDirection.South },
+            { (CardinalDirection.East, "r"), CardinalDirection.North },
 
             { (CardinalDirection.South, "f"), CardinalDirection.South },
             { (CardinalDirection.South, "b"), CardinalDirection.North },
-            { (CardinalDirection.South, "l"), CardinalDirection.West },
-            { (CardinalDirection.South, "r"), CardinalDirection.East },
+            { (CardinalDirection.South, "l"), CardinalDirection.East },
+            { (CardinalDirection.South, "r"), CardinalDirection.West },
 
             { (CardinalDirection.West, "f"), CardinalDirection.West },
             { (CardinalDirection.West, "b"), CardinalDirection.East },

@@ -138,16 +138,43 @@ public class PatternLoader
                 FileName = "slot1_default_road.json",
                 Pattern = new PatternDefinition
                 {
-                    Name = "Default Road",
-                    Description = "3-wide gravel road with dirt foundation",
-                    Slices = [ "DDD,GGG,_P_,___" ],
+                    Name = "Adaptive Road with Stairs",
+                    Description = "Road that adapts to terrain with stair transitions",
+                    Slices = ["DDD,CCC,_P_,___"],
                     Width = 3,
                     Height = 4,
-                    Blocks = new Dictionary<char, string>
+                    Mode = "adaptive",
+                    Blocks = new Dictionary<char, string>()
                     {
                         { 'D', "game:soil-medium-normal" },
-                        { 'G', "game:gravel-granite" },
+                        { 'C', "game:cobblestone-granite" },
                         { 'P', "player" }
+                    },
+                    TransitionUpLayer = new PatternDefinition
+                    {
+                        Slices = ["DDD,SSS,_P_,___"],
+                        Width = 3,
+                        Height = 4,
+                        Mode = "carve",
+                        Blocks = new Dictionary<char, string>()
+                        {
+                            { 'D', "game:soil-medium-normal" },
+                            { 'S', "game:cobblestonestairs-*|up|f" },
+                            { 'P', "player" }
+                        }
+                    },
+                    TransitionDownLayer = new PatternDefinition
+                    {
+                        Slices = ["DDD,SSS,_P_,___"],
+                        Width = 3,
+                        Height = 4,
+                        Mode = "carve",
+                        Blocks = new Dictionary<char, string>()
+                        {
+                            { 'D', "game:soil-medium-normal" },
+                            { 'S', "game:cobblestonestairs-*|up|b" },
+                            { 'P', "player" }
+                        }
                     }
                 }
             },

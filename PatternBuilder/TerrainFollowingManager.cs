@@ -5,6 +5,13 @@ using Vintagestory.API.MathTools;
 
 namespace PatternBuilder;
 
+public enum PatternType
+{
+    Normal,
+    TransitionUp,
+    TransitionDown
+}
+
 public class TerrainFollowingManager
 {
     private readonly ICoreClientAPI api;
@@ -25,7 +32,7 @@ public class TerrainFollowingManager
         currentElevation = null;
     }
 
-    public BlockPos GetAdjustedPlacementPosition(
+    public (BlockPos adjustedPosition, PatternType patternType) GetAdjustedPlacementPosition(
         BlockPos basePosition,
         CardinalDirection direction,
         out string statusMessage)
@@ -39,6 +46,9 @@ public class TerrainFollowingManager
         var blockAccessor = api.World.BlockAccessor;
         int? detectedGroundY = TerrainDetector.DetectGroundLevel(lookaheadPos, blockAccessor);
 
+        PatternType patternType = PatternType.Normal;
+        int placementY = currentElevation.Value;
+
         if (detectedGroundY.HasValue)
         {
             int delta = detectedGroundY.Value - currentElevation.Value;
@@ -46,12 +56,16 @@ public class TerrainFollowingManager
             if (delta > 0)
             {
                 currentElevation++;
+                placementY = currentElevation.Value;
+                patternType = PatternType.TransitionUp;
                 statusMessage = $"[Terrain] Stepping UP to Y={currentElevation.Value} (target={detectedGroundY.Value}, remaining={delta - 1})";
             }
             else if (delta < -1)
             {
+                placementY = currentElevation.Value;
                 currentElevation--;
-                statusMessage = $"[Terrain] Stepping DOWN to Y={currentElevation.Value} (target={detectedGroundY.Value}, remaining={Math.Abs(delta + 1)})";
+                patternType = PatternType.TransitionDown;
+                statusMessage = $"[Terrain] Stepping DOWN from Y={placementY} to Y={currentElevation.Value} (target={detectedGroundY.Value}, remaining={Math.Abs(delta + 1)})";
             }
             else
             {
@@ -63,7 +77,8 @@ public class TerrainFollowingManager
             statusMessage = $"[Terrain] No ground detected, maintaining Y={currentElevation.Value}";
         }
 
-        return new BlockPos(basePosition.X, currentElevation.Value, basePosition.Z);
+        var adjustedPos = new BlockPos(basePosition.X, placementY, basePosition.Z);
+        return (adjustedPos, patternType);
     }
 
     private BlockPos OffsetPositionForward(BlockPos pos, CardinalDirection direction, int blocks)

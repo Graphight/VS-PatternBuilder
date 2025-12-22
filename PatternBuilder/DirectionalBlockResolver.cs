@@ -10,6 +10,7 @@ namespace PatternBuilder
     {
         public string BaseBlockCode { get; set; }
         public string? RelativeDirection { get; set; }
+        public string? VerticalOrientation { get; set; }
         public string? AxisHint { get; set; }
         public bool IsAuto { get; set; }
 
@@ -17,6 +18,7 @@ namespace PatternBuilder
         {
             BaseBlockCode = baseBlockCode;
             RelativeDirection = null;
+            VerticalOrientation = null;
             AxisHint = null;
             IsAuto = false;
         }
@@ -67,19 +69,24 @@ namespace PatternBuilder
             for (int i = 1; i < parts.Length; i++)
             {
                 string directive = parts[i].ToLower().Trim();
-                
-                // C# uses fall-through grouping to reduce spamming the same operations
+
                 switch (directive)
                 {
                     case "f":
                     case "b":
                     case "l":
                     case "r":
-                    case "up":
-                    case "down":
                         if (directives.RelativeDirection == null)
                         {
                             directives.RelativeDirection = directive;
+                        }
+                        break;
+
+                    case "up":
+                    case "down":
+                        if (directives.VerticalOrientation == null)
+                        {
+                            directives.VerticalOrientation = directive;
                         }
                         break;
 
@@ -111,11 +118,6 @@ namespace PatternBuilder
             }
 
             relativeDirection = relativeDirection.ToLower().Trim();
-
-            if (relativeDirection is "up" or "down")
-            {
-                return playerDirection;
-            }
 
             if (RelativeToAbsoluteMap.TryGetValue((playerDirection, relativeDirection), out CardinalDirection absoluteDir))
             {
@@ -189,7 +191,7 @@ namespace PatternBuilder
                 };
             }
 
-            if (directives.AxisHint == "vertical" || directives.RelativeDirection == "up" || directives.RelativeDirection == "down")
+            if (directives.AxisHint == "vertical" || (directives.VerticalOrientation != null && directives.RelativeDirection == null))
             {
                 return new[] {
                     $"{baseCode}-ud",
@@ -203,18 +205,17 @@ namespace PatternBuilder
 
             string dirAbbr = direction.ToString().ToLower()[0].ToString();
             string dirFull = direction.ToString().ToLower();
+            string vertOrientation = directives.VerticalOrientation ?? "up";
 
             return new[] {
-                $"{baseCode}-up-{dirFull}-*",
-                $"{baseCode}-up-{dirAbbr}-*",
-                $"{baseCode}-down-{dirFull}-*",
-                $"{baseCode}-down-{dirAbbr}-*",
-                $"{baseCode}-*-{dirFull}-*",
-                $"{baseCode}-*-{dirAbbr}-*",
-                $"{baseCode}-{dirAbbr}",
-                $"{baseCode}-{dirAbbr}-*",
+                $"{baseCode}-{vertOrientation}-{dirFull}",
+                $"{baseCode}-{vertOrientation}-{dirFull}-*",
+                $"{baseCode}-{vertOrientation}-{dirAbbr}",
+                $"{baseCode}-{vertOrientation}-{dirAbbr}-*",
                 $"{baseCode}-{dirFull}",
                 $"{baseCode}-{dirFull}-*",
+                $"{baseCode}-{dirAbbr}",
+                $"{baseCode}-{dirAbbr}-*",
                 $"{baseCode}*"
             };
         }

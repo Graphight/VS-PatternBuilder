@@ -13,6 +13,8 @@ public class PatternDefinition
     public int Height { get; set; }
     public string Mode { get; set; }
     public Dictionary<char, string> Blocks { get; set; }
+    public PatternDefinition? TransitionUpLayer { get; set; }
+    public PatternDefinition? TransitionDownLayer { get; set; }
 
     private char[,] parsedGrid;
 
@@ -159,6 +161,24 @@ public class PatternDefinition
             }
         }
 
+        if (TransitionUpLayer != null)
+        {
+            var transitionErrors = TransitionUpLayer.GetValidationErrors(api);
+            foreach (var error in transitionErrors)
+            {
+                errors.Add($"TransitionUpLayer: {error}");
+            }
+        }
+
+        if (TransitionDownLayer != null)
+        {
+            var transitionErrors = TransitionDownLayer.GetValidationErrors(api);
+            foreach (var error in transitionErrors)
+            {
+                errors.Add($"TransitionDownLayer: {error}");
+            }
+        }
+
         return errors;
     }
 
@@ -193,16 +213,43 @@ public class PatternDefinition
     {
         return new PatternDefinition
         {
-            Name = "Default Road",
-            Description = "3-wide gravel road with dirt foundation",
-            Slices = [ "DDD,GGG,_P_,___" ],
+            Name = "Adaptive Road with Stairs",
+            Description = "Road that adapts to terrain with stair transitions",
+            Slices = ["DDD,CCC,_P_,___"],
             Width = 3,
             Height = 4,
-            Blocks = new Dictionary<char, string>
+            Mode = "adaptive",
+            Blocks = new Dictionary<char, string>()
             {
                 { 'D', "game:soil-medium-normal" },
-                { 'G', "game:gravel-granite" },
+                { 'C', "game:cobblestone-granite" },
                 { 'P', "player" }
+            },
+            TransitionUpLayer = new PatternDefinition
+            {
+                Slices = ["DDD,SSS,_P_,___"],
+                Width = 3,
+                Height = 4,
+                Mode = "carve",
+                Blocks = new Dictionary<char, string>()
+                {
+                    { 'D', "game:soil-medium-normal" },
+                    { 'S', "game:cobblestonestairs-*|up|f" },
+                    { 'P', "player" }
+                }
+            },
+            TransitionDownLayer = new PatternDefinition
+            {
+                Slices = ["DDD,SSS,_P_,___"],
+                Width = 3,
+                Height = 4,
+                Mode = "carve",
+                Blocks = new Dictionary<char, string>()
+                {
+                    { 'D', "game:soil-medium-normal" },
+                    { 'S', "game:cobblestonestairs-*|up|b" },
+                    { 'P', "player" }
+                }
             }
         };
     }

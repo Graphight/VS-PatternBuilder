@@ -369,7 +369,41 @@ public class PatternBuilderModSystem : ModSystem
     private void CacheBlockIdsForPattern(PatternDefinition pattern)
     {
         int cachedCount = 0;
-        foreach (var kvp in pattern.Blocks)
+
+        cachedCount += CacheBlocksFromDictionary(pattern.Blocks);
+
+        if (pattern.TransitionUpLayer != null)
+        {
+            cachedCount += CacheBlocksFromDictionary(pattern.TransitionUpLayer.Blocks);
+        }
+
+        if (pattern.TransitionDownLayer != null)
+        {
+            cachedCount += CacheBlocksFromDictionary(pattern.TransitionDownLayer.Blocks);
+        }
+
+        if (pattern.Mode == "carve" && !blockIdCache.ContainsKey("air"))
+        {
+            var airBlock = clientApi.World.GetBlock(new AssetLocation("game:air"));
+            if (airBlock != null)
+            {
+                blockIdCache["air"] = airBlock.BlockId;
+                cachedCount++;
+                Mod.Logger.Notification($"PatternBuilder: Cached air block for carve mode (ID: {airBlock.BlockId})");
+            }
+            else
+            {
+                Mod.Logger.Warning("PatternBuilder: Failed to get air block for carve mode!");
+            }
+        }
+
+        Mod.Logger.Notification($"PatternBuilder: Cached {cachedCount} block IDs for pattern '{pattern.Name}' (Mode: {pattern.Mode})");
+    }
+
+    private int CacheBlocksFromDictionary(Dictionary<char, string> blocks)
+    {
+        int count = 0;
+        foreach (var kvp in blocks)
         {
             string blockCode = kvp.Value;
 
@@ -390,30 +424,14 @@ public class PatternBuilderModSystem : ModSystem
             if (block != null)
             {
                 blockIdCache[blockCode] = block.BlockId;
-                cachedCount++;
+                count++;
             }
             else
             {
                 Mod.Logger.Warning($"PatternBuilder: Failed to load block '{blockCode}'");
             }
         }
-
-        if (pattern.Mode == "carve" && !blockIdCache.ContainsKey("air"))
-        {
-            var airBlock = clientApi.World.GetBlock(new AssetLocation("game:air"));
-            if (airBlock != null)
-            {
-                blockIdCache["air"] = airBlock.BlockId;
-                cachedCount++;
-                Mod.Logger.Notification($"PatternBuilder: Cached air block for carve mode (ID: {airBlock.BlockId})");
-            }
-            else
-            {
-                Mod.Logger.Warning("PatternBuilder: Failed to get air block for carve mode!");
-            }
-        }
-
-        Mod.Logger.Notification($"PatternBuilder: Cached {cachedCount} block IDs for pattern '{pattern.Name}' (Mode: {pattern.Mode})");
+        return count;
     }
 
 
@@ -465,8 +483,8 @@ public class PatternBuilderModSystem : ModSystem
             // Offset placement ahead of player (1 block in movement direction)
             BlockPos placePos = OffsetPositionForward(currentPos, direction, 1);
 
-            // PHASE 2: Adjust placement Y based on terrain (terrain following)
-            BlockPos adjustedPlacePos = terrainFollowingManager.GetAdjustedPlacementPosition(
+            // PHASE 3: Adjust placement Y and determine pattern type (terrain following with transitions)
+            var (adjustedPlacePos, patternType) = terrainFollowingManager.GetAdjustedPlacementPosition(
                 placePos,
                 direction,
                 out string terrainStatus
@@ -474,8 +492,17 @@ public class PatternBuilderModSystem : ModSystem
 
             clientApi.ShowChatMessage(terrainStatus);
 
-            // Place the road pattern at adjusted elevation
-            PlaceRoadPattern(adjustedPlacePos, direction);
+            // Select pattern based on terrain
+            var basePattern = patternManager.GetCurrentPattern();
+            PatternDefinition patternToUse = patternType switch
+            {
+                PatternType.TransitionUp => basePattern.TransitionUpLayer ?? basePattern,
+                PatternType.TransitionDown => basePattern.TransitionDownLayer ?? basePattern,
+                _ => basePattern
+            };
+
+            // Place the pattern at adjusted elevation
+            PlaceRoadPattern(adjustedPlacePos, direction, patternToUse);
 
             lastDirection = direction;
             lastPlacementPos = currentPos.Copy();
@@ -540,9 +567,8 @@ public class PatternBuilderModSystem : ModSystem
         }
     }
 
-    private void PlaceRoadPattern(BlockPos centerPos, CardinalDirection direction)
+    private void PlaceRoadPattern(BlockPos centerPos, CardinalDirection direction, PatternDefinition currentPattern)
     {
-        var currentPattern = patternManager.GetCurrentPattern();
 
         var player = clientApi.World.Player;
         if (player == null)

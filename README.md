@@ -26,7 +26,9 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 For more information look at the [ROADMAP.md](documentation/ROADMAP.md)
 
 > [!CAUTION]
-> Running down slopes will skip placements, it is better to walk
+> The terrain following feature is quite janky.
+> Moving quickly down slopes while trying to place adaptive roads will skip placements, it is better to walk slowly.
+> If you have not set `TransitionLayers` then it will still try to fold around terrain but transitions will be sharp.
 
 ---
 

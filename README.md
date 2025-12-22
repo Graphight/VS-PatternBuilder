@@ -9,17 +9,19 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 
 ---
 
-## Status (roadmap)
+## Feature Status (shorthand roadmap)
 
 - [x] Basic road placement prototype
 - [x] Multi-pattern system with JSON configs
-- [x] Advanced features (carve mode, validation, performance
+- [x] Adaptive roads vs tunnel carving (additive vs destructive)
+- [x] Pattern validation
 - [x] Survival mode support with inventory consumption
 - [x] 3D patterns
 - [x] Pattern preview
 - [x] Directional blocks
 - [ ] Terrain following
 - [ ] In-game editor
+- [ ] Tool-durability use
 
 For more information look at the [ROADMAP.md](documentation/ROADMAP.md)
 

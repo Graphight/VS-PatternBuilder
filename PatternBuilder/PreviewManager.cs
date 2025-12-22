@@ -73,8 +73,8 @@ public class PreviewManager
 
         int patternWidth = currentPattern.Width;
         int patternHeight = currentPattern.Height;
-        int playerLayer = currentPattern.FindPlayerFeet(currentSliceIndex);
-        int baseY = centerPos.Y - playerLayer;
+        var (playerX, playerY) = currentPattern.FindPlayerPosition(currentSliceIndex);
+        int baseY = centerPos.Y - playerY;
 
         var previewBlocks = new List<PreviewBlock>();
         var blockAccessor = api.World.BlockAccessor;
@@ -111,7 +111,7 @@ public class PreviewManager
                     continue;
                 }
 
-                int offset = x - (patternWidth / 2);
+                int offset = x - playerX;
                 BlockPos placePos;
 
                 if (direction == CardinalDirection.North || direction == CardinalDirection.South)

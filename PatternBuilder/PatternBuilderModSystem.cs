@@ -656,8 +656,8 @@ public class PatternBuilderModSystem : ModSystem
             return;
         }
 
-        int playerLayer = currentPattern.FindPlayerFeet(currentSliceIndex);
-        int baseY = centerPos.Y - playerLayer;
+        var (playerX, playerY) = currentPattern.FindPlayerPosition(currentSliceIndex);
+        int baseY = centerPos.Y - playerY;
 
         var message = new PlacePatternMessage
         {
@@ -703,7 +703,7 @@ public class PatternBuilderModSystem : ModSystem
                     continue;
                 }
 
-                int offset = x - (patternWidth / 2);
+                int offset = x - playerX;
                 BlockPos placePos;
 
                 if (direction == CardinalDirection.North || direction == CardinalDirection.South)

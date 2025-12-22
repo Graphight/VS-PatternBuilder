@@ -182,18 +182,18 @@ public class PatternDefinition
         return errors;
     }
 
-    public int FindPlayerFeet(int sliceIndex)
+    public (int x, int y) FindPlayerPosition(int sliceIndex)
     {
         for (int y = 0; y < Height; y++)
         {
             for (int x = 0; x < Width; x++)
             {
                 if (parsedGrid[y, x] == 'P')
-                    return y;
+                    return (x, y);
             }
         }
 
-        return 0;
+        return (Width / 2, 0);
     }
 
     public string GetBlockAt(int x, int y)

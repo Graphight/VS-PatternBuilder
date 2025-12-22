@@ -91,10 +91,14 @@ public static class InventoryHelper
                 if (blockCode == "air")
                     continue;
 
-                if (blockCounts.ContainsKey(blockCode))
-                    blockCounts[blockCode]++;
+                string baseBlockCode = blockCode.Contains("|")
+                    ? blockCode.Split('|')[0]
+                    : blockCode;
+
+                if (blockCounts.ContainsKey(baseBlockCode))
+                    blockCounts[baseBlockCode]++;
                 else
-                    blockCounts[blockCode] = 1;
+                    blockCounts[baseBlockCode] = 1;
             }
         }
 

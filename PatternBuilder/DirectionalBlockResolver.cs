@@ -122,5 +122,85 @@ namespace PatternBuilder
 
             return playerDirection;
         }
+
+        public static int? ResolveBlockId(string blockCodeWithDirectives, CardinalDirection playerDirection, ICoreAPI api)
+        {
+            var directives = ParseDirectives(blockCodeWithDirectives);
+
+            if (directives.RelativeDirection == null && directives.AxisHint == null)
+            {
+                var baseBlock = api.World.GetBlock(new AssetLocation(directives.BaseBlockCode));
+                return baseBlock?.BlockId;
+            }
+
+            CardinalDirection absoluteDirection = TranslateRelativeToAbsolute(
+                directives.RelativeDirection,
+                playerDirection);
+
+            return TryResolveVariant(directives.BaseBlockCode, absoluteDirection, directives, api);
+        }
+
+        private static int? TryResolveVariant(string baseCode, CardinalDirection direction, BlockDirectives directives, ICoreAPI api)
+        {
+            string[] candidates = GenerateVariantCandidates(baseCode, direction, directives);
+
+            foreach (var candidate in candidates)
+            {
+                var blocks = api.World.SearchBlocks(new AssetLocation(candidate));
+                if (blocks != null && blocks.Length > 0)
+                {
+                    return blocks[0].BlockId;
+                }
+            }
+
+            var fallbackBlock = api.World.SearchBlocks(new AssetLocation(baseCode + "*"));
+            if (fallbackBlock != null && fallbackBlock.Length > 0)
+            {
+                return fallbackBlock[0].BlockId;
+            }
+
+            return null;
+        }
+
+        private static string[] GenerateVariantCandidates(string baseCode, CardinalDirection direction, BlockDirectives directives)
+        {
+            if (directives.AxisHint == "horizontal")
+            {
+                string axis = (direction == CardinalDirection.North || direction == CardinalDirection.South)
+                    ? "ns" : "ew";
+
+                return new[] {
+                    $"{baseCode}-{axis}",
+                    $"{baseCode}-{axis}-*",
+                    $"{baseCode}-{ExpandAxis(axis)}",
+                    $"{baseCode}-{ExpandAxis(axis)}-*"
+                };
+            }
+
+            if (directives.AxisHint == "vertical" || directives.RelativeDirection == "up" || directives.RelativeDirection == "down")
+            {
+                return new[] {
+                    $"{baseCode}-ud",
+                    $"{baseCode}-ud-*",
+                    $"{baseCode}-updown",
+                    $"{baseCode}-updown-*",
+                    $"{baseCode}-vertical",
+                    $"{baseCode}-vertical-*"
+                };
+            }
+
+            return new[] { $"{baseCode}*" };
+        }
+
+        private static string ExpandAxis(string axis)
+        {
+            return axis switch
+            {
+                "ns" => "northsouth",
+                "ew" => "eastwest",
+                "ud" => "updown",
+                _ => axis
+            };
+        }
     }
 }

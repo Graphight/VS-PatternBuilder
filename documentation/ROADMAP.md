@@ -70,7 +70,6 @@
 # Known Bugs
 
 ## Active
-- When given an asymmetrical hoizontal pattern the system still thinks the player is in the center
 - Validation is skipped for blocks with wildcards ('*') which means players can put garbage in there
 - No validation that TransitionUpLayer/TransitionDownLayer exist when terrain following is enabled
 - Sprinting down slopes will skip some transition layer placements (I spent way too long trying to fix this so gave up)
@@ -83,6 +82,7 @@
 - ~~Preview mode doesn't work for directional blocks~~ - Fixed by adding DirectionalBlockResolver.ResolveBlockId() to PreviewManager
 - ~~Trees and plants cause false elevation changes~~ - Fixed with material-based foliage filtering (v0.4.5)
 - ~~Descending stairs don't place~~ - Fixed with Option B hybrid approach (v0.4.5)
+- ~~When given an asymmetrical hoizontal pattern the system still thinks the player is in the center~~ - Fixed by returning player x and y from `FindPlayerPosition()` (v0.4.5)
 
 ## Known Limitations (Acceptable - Documented)
 - **Sprinting downhill**: Skips 20-30% of descending stairs when sprinting (works perfectly at walking speed)

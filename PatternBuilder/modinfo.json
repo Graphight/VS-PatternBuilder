@@ -7,8 +7,8 @@
         "Graphight"
     ],
     "description": "Automated pattern placement - walk to build roads, walls, and tunnels",
-    "version": "0.1.0",
+    "version": "0.4.4",
     "dependencies": {
-        "game": "1.21.0"
+        "game": "1.21.6"
     }
 }

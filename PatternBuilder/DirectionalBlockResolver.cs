@@ -53,8 +53,9 @@ namespace PatternBuilder
             {
                 return new BlockDirectives("air");
             }
-
-            if (!blockCodeWithDirectives.Contains("|"))
+            
+            // If no direction hints then abort early
+            if (!blockCodeWithDirectives.Contains('|'))
             {
                 return new BlockDirectives(blockCodeWithDirectives);
             }
@@ -66,7 +67,8 @@ namespace PatternBuilder
             for (int i = 1; i < parts.Length; i++)
             {
                 string directive = parts[i].ToLower().Trim();
-
+                
+                // C# uses fall-through grouping to reduce spamming the same operations
                 switch (directive)
                 {
                     case "f":

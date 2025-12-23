@@ -86,23 +86,30 @@ public class ToolDurabilityManager
         if (inventory == null)
             return null;
 
-        foreach (var slot in inventory)
+        try
         {
-            if (slot == null || slot.Empty || slot.Itemstack == null)
-                continue;
-
-            CollectibleObject collectible = slot.Itemstack.Collectible;
-            if (collectible == null)
-                continue;
-
-            if (CanToolBreakBlock(collectible, block, api))
+            foreach (var slot in inventory)
             {
-                int remainingDurability = collectible.GetRemainingDurability(slot.Itemstack);
-                if (remainingDurability > 0)
+                if (slot == null || slot.Empty || slot.Itemstack == null)
+                    continue;
+
+                CollectibleObject collectible = slot.Itemstack.Collectible;
+                if (collectible == null)
+                    continue;
+
+                if (CanToolBreakBlock(collectible, block, api))
                 {
-                    return slot;
+                    int remainingDurability = collectible.GetRemainingDurability(slot.Itemstack);
+                    if (remainingDurability > 0)
+                    {
+                        return slot;
+                    }
                 }
             }
+        }
+        catch (System.NullReferenceException)
+        {
+            return null;
         }
 
         return null;
@@ -115,16 +122,17 @@ public class ToolDurabilityManager
         PatternBuilderConfig config)
     {
         var requirements = new Dictionary<EnumBlockMaterial, int>();
+        IBlockAccessor blockAccessor = api.World.BlockAccessor;
 
         for (int i = 0; i < blockIds.Count; i++)
         {
-            int blockId = blockIds[i];
-            Block block = api.World.GetBlock(blockId);
+            BlockPos pos = positions[i];
+            Block existingBlock = blockAccessor.GetBlock(pos);
 
-            if (block == null || block.Code.Path == "air")
+            if (existingBlock == null || existingBlock.Code.Path == "air")
                 continue;
 
-            EnumBlockMaterial material = block.BlockMaterial;
+            EnumBlockMaterial material = existingBlock.BlockMaterial;
 
             if (!requirements.ContainsKey(material))
             {
@@ -223,15 +231,16 @@ public class ToolDurabilityManager
             int blockId = blockIds[i];
             BlockPos pos = positions[i];
 
-            Block block = world.GetBlock(blockId);
-            if (block == null || block.Code.Path == "air")
+            Block existingBlock = blockAccessor.GetBlock(pos);
+
+            if (existingBlock == null || existingBlock.Code.Path == "air")
                 continue;
 
-            EnumBlockMaterial material = block.BlockMaterial;
+            EnumBlockMaterial material = existingBlock.BlockMaterial;
 
             if (!materialToTool.TryGetValue(material, out ItemSlot toolSlot))
             {
-                toolSlot = FindSuitableToolInInventory(player, block, world.Api, out bool inHotbar);
+                toolSlot = FindSuitableToolInInventory(player, existingBlock, world.Api, out bool inHotbar);
                 if (toolSlot == null)
                 {
                     result.Success = false;
@@ -249,14 +258,10 @@ public class ToolDurabilityManager
 
             if (config.HarvestCarvedBlocks)
             {
-                Block existingBlock = blockAccessor.GetBlock(pos);
-                if (existingBlock != null && existingBlock.Code.Path != "air")
+                ItemStack[] drops = existingBlock.GetDrops(world, pos, player, 1.0f);
+                if (drops != null && drops.Length > 0)
                 {
-                    ItemStack[] drops = existingBlock.GetDrops(world, pos, player, 1.0f);
-                    if (drops != null && drops.Length > 0)
-                    {
-                        result.HarvestedItems.AddRange(drops);
-                    }
+                    result.HarvestedItems.AddRange(drops);
                 }
             }
 
@@ -268,7 +273,7 @@ public class ToolDurabilityManager
                 toolSlot.MarkDirty();
                 materialToTool.Remove(material);
 
-                ItemSlot newTool = FindSuitableToolInInventory(player, block, world.Api, out bool inHotbar);
+                ItemSlot newTool = FindSuitableToolInInventory(player, existingBlock, world.Api, out bool inHotbar);
                 if (newTool == null)
                 {
                     result.Success = false;

@@ -108,6 +108,8 @@ public class PatternBuilderModSystem : ModSystem
 
         if (!isCreative && message.RequiresToolDurability)
         {
+            Mod.Logger.Notification($"PatternBuilder: Consuming tool durability for {fromPlayer.PlayerName} (GameMode: {fromPlayer.WorldData.CurrentGameMode})");
+
             var positions = message.Positions.Select(p => p.ToBlockPos()).ToList();
             var result = ToolDurabilityManager.ConsumeToolDurabilityAndHarvestBlocks(
                 fromPlayer,
@@ -509,19 +511,28 @@ public class PatternBuilderModSystem : ModSystem
         direction = CalculateDirection(lastPlacementPos, currentPos);
         BlockPos placePos = OffsetPositionForward(currentPos, direction, 1);
 
-        // Peek at terrain to determine pattern type
-        var (_, peekPatternType) = terrainFollowingManager.GetAdjustedPlacementPosition(
-            placePos,
-            direction
-        );
+        var basePattern = patternManager.GetCurrentPattern();
+        bool isCarveMode = basePattern.Mode == "carve";
 
-        // Adjust tick rate based on terrain type (faster polling for descending)
-        AdjustTickRateForPatternType(peekPatternType);
+        PatternType peekPatternType = PatternType.Normal;
+
+        if (!isCarveMode)
+        {
+            // Peek at terrain to determine pattern type
+            var (_, patternTypePeek) = terrainFollowingManager.GetAdjustedPlacementPosition(
+                placePos,
+                direction
+            );
+            peekPatternType = patternTypePeek;
+
+            // Adjust tick rate based on terrain type (faster polling for descending)
+            AdjustTickRateForPatternType(peekPatternType);
+        }
 
         // Option B: Hybrid approach for descending stairs
         // First descending stair uses distance threshold, subsequent use Y-change
         bool shouldPlace = false;
-        if (peekPatternType == PatternType.TransitionDown)
+        if (!isCarveMode && peekPatternType == PatternType.TransitionDown)
         {
             if (lastPlacedPatternType != PatternType.TransitionDown)
             {
@@ -536,7 +547,7 @@ public class PatternBuilderModSystem : ModSystem
         }
         else
         {
-            // For ascending/flat, use normal distance threshold
+            // For ascending/flat/carve mode, use normal distance threshold
             shouldPlace = distance > NormalPlacementThreshold;
         }
 
@@ -551,20 +562,35 @@ public class PatternBuilderModSystem : ModSystem
                 UpdateSliceIndexBasedOnDirection(forwardDirection.Value, direction);
             }
 
-            // PHASE 3: Adjust placement Y and determine pattern type (terrain following with transitions)
-            var (adjustedPlacePos, patternType) = terrainFollowingManager.GetAdjustedPlacementPosition(
-                placePos,
-                direction
-            );
+            BlockPos adjustedPlacePos;
+            PatternType patternType;
+            PatternDefinition patternToUse;
 
-            // Select pattern based on terrain
-            var basePattern = patternManager.GetCurrentPattern();
-            PatternDefinition patternToUse = patternType switch
+            if (isCarveMode)
             {
-                PatternType.TransitionUp => basePattern.TransitionUpLayer ?? basePattern,
-                PatternType.TransitionDown => basePattern.TransitionDownLayer ?? basePattern,
-                _ => basePattern
-            };
+                // Carve mode: no terrain following, use original position and base pattern
+                adjustedPlacePos = placePos;
+                patternType = PatternType.Normal;
+                patternToUse = basePattern;
+            }
+            else
+            {
+                // PHASE 3: Adjust placement Y and determine pattern type (terrain following with transitions)
+                var (adjustedPos, pType) = terrainFollowingManager.GetAdjustedPlacementPosition(
+                    placePos,
+                    direction
+                );
+                adjustedPlacePos = adjustedPos;
+                patternType = pType;
+
+                // Select pattern based on terrain
+                patternToUse = patternType switch
+                {
+                    PatternType.TransitionUp => basePattern.TransitionUpLayer ?? basePattern,
+                    PatternType.TransitionDown => basePattern.TransitionDownLayer ?? basePattern,
+                    _ => basePattern
+                };
+            }
 
             // Place the pattern at adjusted elevation
             PlaceRoadPattern(adjustedPlacePos, direction, patternToUse);
@@ -771,7 +797,7 @@ public class PatternBuilderModSystem : ModSystem
                 bool shouldAutoConnect = DirectionalBlockResolver.ShouldAutoConnect(blockCode);
                 message.AddBlock(blockId, placePos, shouldAutoConnect);
 
-                if (!isCreative)
+                if (!isCreative && blockCode != "air")
                 {
                     if (actualBlocksToPlace.ContainsKey(blockCode))
                         actualBlocksToPlace[blockCode]++;

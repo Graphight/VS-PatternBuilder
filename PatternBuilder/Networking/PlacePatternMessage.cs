@@ -22,6 +22,12 @@ public class PlacePatternMessage
     [ProtoMember(5)]
     public List<SerializedBlockPos> AutoConnectPositions { get; set; }
 
+    [ProtoMember(6)]
+    public bool RequiresToolDurability { get; set; }
+
+    [ProtoMember(7)]
+    public bool ShouldHarvestBlocks { get; set; }
+
     public PlacePatternMessage()
     {
         BlockIds = new List<int>();
@@ -29,6 +35,8 @@ public class PlacePatternMessage
         PlayerId = "";
         RequiredPatterns = new Dictionary<string, int>();
         AutoConnectPositions = new List<SerializedBlockPos>();
+        RequiresToolDurability = false;
+        ShouldHarvestBlocks = false;
     }
 
     public void AddBlock(int blockId, BlockPos pos, bool shouldAutoConnect = false)

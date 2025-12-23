@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using PatternBuilder.Config;
 using PatternBuilder.Inventory;
 using PatternBuilder.Networking;
 using PatternBuilder.Pattern;
@@ -40,6 +42,7 @@ public class PatternBuilderModSystem : ModSystem
     private PatternManager patternManager;
     private PatternLoader patternLoader;
     private Dictionary<string, int> blockIdCache;
+    private PatternBuilderConfig config;
 
     private PreviewRenderer previewRenderer;
     private PreviewManager previewManager;
@@ -74,6 +77,10 @@ public class PatternBuilderModSystem : ModSystem
     {
         serverApi = api;
 
+        var configPath = Path.Combine(api.GetOrCreateDataPath("ModConfig"), "patternbuilder");
+        config = PatternBuilderConfig.Load(api, configPath);
+        config.Validate(api);
+
         serverChannel = api.Network.GetChannel(NetworkChannelId)
             .SetMessageHandler<PlacePatternMessage>(OnClientPlacePattern);
 
@@ -96,6 +103,38 @@ public class PatternBuilderModSystem : ModSystem
             {
                 Mod.Logger.Warning($"PatternBuilder: Server-side consumption failed for {fromPlayer.PlayerName}");
                 return;
+            }
+        }
+
+        if (!isCreative && message.RequiresToolDurability)
+        {
+            var positions = message.Positions.Select(p => p.ToBlockPos()).ToList();
+            var result = ToolDurabilityManager.ConsumeToolDurabilityAndHarvestBlocks(
+                fromPlayer,
+                message.BlockIds,
+                positions,
+                serverApi.World,
+                config
+            );
+
+            if (!result.Success)
+            {
+                Mod.Logger.Warning($"PatternBuilder: Tool durability consumption failed for {fromPlayer.PlayerName}: {result.FailureReason}");
+                ((ICoreServerAPI)serverApi).SendMessage(fromPlayer, 0, $"Pattern building failed: {result.FailureReason}", EnumChatType.Notification);
+                return;
+            }
+
+            if (result.ToolsSwitched != null && result.ToolsSwitched.Count > 0)
+            {
+                foreach (var toolName in result.ToolsSwitched)
+                {
+                    ((ICoreServerAPI)serverApi).SendMessage(fromPlayer, 0, $"Switched to {toolName} from backpack", EnumChatType.Notification);
+                }
+            }
+
+            if (result.HarvestedItems != null && result.HarvestedItems.Count > 0)
+            {
+                Mod.Logger.Notification($"PatternBuilder: Harvested {result.HarvestedItems.Sum(i => i.StackSize)} items for {fromPlayer.PlayerName}");
             }
         }
 
@@ -122,6 +161,10 @@ public class PatternBuilderModSystem : ModSystem
     public override void StartClientSide(ICoreClientAPI api)
     {
         this.clientApi = api;
+
+        var configPath = Path.Combine(api.GetOrCreateDataPath("ModConfig"), "patternbuilder");
+        config = PatternBuilderConfig.Load(api, configPath);
+        config.Validate(api);
 
         clientChannel = api.Network.GetChannel(NetworkChannelId);
 
@@ -741,6 +784,32 @@ public class PatternBuilderModSystem : ModSystem
         if (!isCreative)
         {
             message.RequiredPatterns = actualBlocksToPlace;
+
+            if (isCarveMode && config.RequireToolsForCarving)
+            {
+                var durabilityRequirements = ToolDurabilityManager.CalculateDurabilityRequirements(
+                    message.BlockIds,
+                    message.Positions.Select(p => p.ToBlockPos()).ToList(),
+                    clientApi,
+                    config
+                );
+
+                if (!ToolDurabilityManager.HasSufficientToolDurability(
+                    player,
+                    durabilityRequirements,
+                    clientApi,
+                    out string missingToolMessage))
+                {
+                    clientApi.ShowChatMessage($"Insufficient tool durability! {missingToolMessage}");
+                    clientApi.ShowChatMessage("Pattern building auto-disabled. Use '.pb on' to re-enable.");
+                    buildingEnabled = false;
+                    Mod.Logger.Notification($"PatternBuilder: Auto-disabled - {missingToolMessage}");
+                    return;
+                }
+
+                message.RequiresToolDurability = true;
+                message.ShouldHarvestBlocks = config.HarvestCarvedBlocks;
+            }
         }
 
         clientChannel.SendPacket(message);

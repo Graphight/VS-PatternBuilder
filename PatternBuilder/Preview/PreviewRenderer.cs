@@ -1,9 +1,8 @@
-using System;
 using System.Collections.Generic;
 using Vintagestory.API.Client;
 using Vintagestory.API.MathTools;
 
-namespace PatternBuilder;
+namespace PatternBuilder.Preview;
 
 public class PreviewRenderer : IRenderer
 {

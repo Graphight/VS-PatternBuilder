@@ -1,11 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using PatternBuilder.Inventory;
+using PatternBuilder.Networking;
+using PatternBuilder.Pattern;
+using PatternBuilder.Preview;
+using PatternBuilder.TerrainFollowing;
 using Vintagestory.API.Client;
-using Vintagestory.API.Server;
-using Vintagestory.API.Config;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
+using Vintagestory.API.Server;
 
 namespace PatternBuilder;
 

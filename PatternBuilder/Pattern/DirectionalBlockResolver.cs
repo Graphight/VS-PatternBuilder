@@ -1,10 +1,7 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using Vintagestory.API.Common;
-using Vintagestory.API.MathTools;
 
-namespace PatternBuilder
+namespace PatternBuilder.Pattern
 {
     public class BlockDirectives
     {

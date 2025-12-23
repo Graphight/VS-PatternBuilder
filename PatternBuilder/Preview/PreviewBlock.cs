@@ -3,7 +3,7 @@ using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
 
-namespace PatternBuilder;
+namespace PatternBuilder.Preview;
 
 public class PreviewBlock : IDisposable
 {

@@ -4,7 +4,7 @@ using System.IO;
 using Newtonsoft.Json;
 using Vintagestory.API.Common;
 
-namespace PatternBuilder;
+namespace PatternBuilder.Pattern;
 
 public class PatternLoader
 {

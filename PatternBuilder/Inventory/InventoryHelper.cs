@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using PatternBuilder.Pattern;
 using Vintagestory.API.Common;
-using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
 
-namespace PatternBuilder;
+namespace PatternBuilder.Inventory;
 
 public static class InventoryHelper
 {

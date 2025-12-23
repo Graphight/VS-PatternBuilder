@@ -1,8 +1,8 @@
-using ProtoBuf;
 using System.Collections.Generic;
+using ProtoBuf;
 using Vintagestory.API.MathTools;
 
-namespace PatternBuilder;
+namespace PatternBuilder.Networking;
 
 [ProtoContract]
 public class PlacePatternMessage

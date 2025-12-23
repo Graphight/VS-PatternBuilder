@@ -1,8 +1,7 @@
-using System;
 using System.Collections.Generic;
 using Vintagestory.API.Common;
 
-namespace PatternBuilder;
+namespace PatternBuilder.Pattern;
 
 public class PatternDefinition
 {

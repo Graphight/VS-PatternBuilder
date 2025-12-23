@@ -1,10 +1,10 @@
 using System.Collections.Generic;
+using PatternBuilder.Pattern;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
-using Vintagestory.API.Util;
 
-namespace PatternBuilder;
+namespace PatternBuilder.Preview;
 
 public class PreviewManager
 {

@@ -155,7 +155,6 @@ public class PatternLoader
                         Slices = ["DDD,SSS,_P_,___"],
                         Width = 3,
                         Height = 4,
-                        Mode = "carve",
                         Blocks = new Dictionary<char, string>()
                         {
                             { 'D', "game:soil-medium-normal" },
@@ -168,7 +167,6 @@ public class PatternLoader
                         Slices = ["DDD,SSS,_P_,___"],
                         Width = 3,
                         Height = 4,
-                        Mode = "carve",
                         Blocks = new Dictionary<char, string>()
                         {
                             { 'D', "game:soil-medium-normal" },

@@ -108,7 +108,7 @@ public class PatternBuilderModSystem : ModSystem
 
         if (!isCreative && message.RequiresToolDurability)
         {
-            Mod.Logger.Notification($"PatternBuilder: Consuming tool durability for {fromPlayer.PlayerName} (GameMode: {fromPlayer.WorldData.CurrentGameMode})");
+            Mod.Logger.Debug($"PatternBuilder: Consuming tool durability for {fromPlayer.PlayerName}");
 
             var positions = message.Positions.Select(p => p.ToBlockPos()).ToList();
             var result = ToolDurabilityManager.ConsumeToolDurabilityAndHarvestBlocks(
@@ -136,7 +136,7 @@ public class PatternBuilderModSystem : ModSystem
 
             if (result.HarvestedItems != null && result.HarvestedItems.Count > 0)
             {
-                Mod.Logger.Notification($"PatternBuilder: Harvested {result.HarvestedItems.Sum(i => i.StackSize)} items for {fromPlayer.PlayerName}");
+                Mod.Logger.Debug($"PatternBuilder: Harvested {result.HarvestedItems.Sum(i => i.StackSize)} items for {fromPlayer.PlayerName}");
             }
         }
 
@@ -814,7 +814,6 @@ public class PatternBuilderModSystem : ModSystem
             if (isCarveMode && config.RequireToolsForCarving)
             {
                 var durabilityRequirements = ToolDurabilityManager.CalculateDurabilityRequirements(
-                    message.BlockIds,
                     message.Positions.Select(p => p.ToBlockPos()).ToList(),
                     clientApi,
                     config

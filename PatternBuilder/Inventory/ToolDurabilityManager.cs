@@ -88,6 +88,7 @@ public class ToolDurabilityManager
 
         try
         {
+            // VS API quirk: InventoryPlayerCreative exists in survival mode but throws NullReferenceException when enumerating
             foreach (var slot in inventory)
             {
                 if (slot == null || slot.Empty || slot.Itemstack == null)
@@ -116,7 +117,6 @@ public class ToolDurabilityManager
     }
 
     public static Dictionary<EnumBlockMaterial, int> CalculateDurabilityRequirements(
-        List<int> blockIds,
         List<BlockPos> positions,
         ICoreAPI api,
         PatternBuilderConfig config)
@@ -124,7 +124,7 @@ public class ToolDurabilityManager
         var requirements = new Dictionary<EnumBlockMaterial, int>();
         IBlockAccessor blockAccessor = api.World.BlockAccessor;
 
-        for (int i = 0; i < blockIds.Count; i++)
+        for (int i = 0; i < positions.Count; i++)
         {
             BlockPos pos = positions[i];
             Block existingBlock = blockAccessor.GetBlock(pos);

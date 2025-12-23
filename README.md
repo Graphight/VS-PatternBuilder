@@ -3,7 +3,7 @@
 A Vintage Story mod that automates placement of repeating block patterns (roads, walls, tunnels) to reduce late-game construction tedium.
 
 ![Game Version](https://img.shields.io/badge/Vintage%20Story-1.21.5+-blue)
-![Version](https://img.shields.io/badge/Alpha-0.4.5-red)
+![Version](https://img.shields.io/badge/Alpha-0.5.0-red)
 
 [//]: # (![Multiplayer]&#40;https://img.shields.io/badge/Multiplayer-supported-green&#41;)
 
@@ -20,8 +20,8 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 - [x] Pattern preview - ghost images two steps infront of user
 - [x] Directional block support Use relative directions (`|f|b|l|r`) in patterns - adapts to travel direction
 - [x] Terrain following - roads adapt to elevation changes with stairs (walk, don't sprint on slopes)
+- [x] Tool durability use - carve mode consumes tools and harvests blocks in survival mode
 - [ ] In-game editor
-- [ ] Tool-durability use
 
 For more information look at the [ROADMAP.md](documentation/ROADMAP.md)
 
@@ -276,10 +276,11 @@ However, I have never managed to get this to work (conflicting `.dll` files) so 
 
 **Survival Mode**:
 1. Gather blocks needed for your pattern (check with `.pb info`)
-2. Type `.pb on` to enable building mode
-3. Walk forward - blocks consumed from inventory as you build
-4. Use wildcard patterns (`game:soil-*`) for flexibility
-5. Auto-disables when out of materials (shows clear message)
+2. For carve mode patterns: ensure you have appropriate tools (pickaxe for stone, shovel for soil/gravel)
+3. Type `.pb on` to enable building mode
+4. Walk forward - blocks consumed from inventory as you build
+5. Use wildcard patterns (`game:soil-*`) for flexibility
+6. Auto-disables when out of materials or tools (shows clear message)
 
 **Tips**:
 - Edit pattern JSON files in the config directory
@@ -288,6 +289,7 @@ However, I have never managed to get this to work (conflicting `.dll` files) so 
 - Walking over existing patterns won't waste materials
 - Enable preview with `.pb preview` to see what will be placed before it happens
 - **Terrain following**: Walk (don't sprint) on slopes for best stair placement. Sprinting downhill may skip some stairs.
+- **Carve mode**: Mod searches hotbar first, then full inventory for tools. If a tool breaks mid-tunnel, it automatically switches to a replacement if available.
 
 **Pattern Preview**:
 - Preview appears 2 blocks ahead of your movement
@@ -310,6 +312,9 @@ However, I have never managed to get this to work (conflicting `.dll` files) so 
 - Patterns cut through terrain
 - Places air blocks to clear space
 - Ideal for tunnels and underground structures
+- **Survival mode**: Consumes tool durability (pickaxe for stone, shovel for soil/gravel/clay)
+- **Survival mode**: Harvests broken blocks into inventory (excess dropped on ground)
+- Maintains constant Y-level (no terrain following)
 
 Set mode in pattern JSON:
 ```json
@@ -319,7 +324,36 @@ Set mode in pattern JSON:
 }
 ```
 
---- 
+---
+
+## Configuration
+
+PatternBuilder uses a server-controlled configuration file for tool durability settings.
+
+**Location**:
+- **Mac OS**: `~/Library/Application Support/VintagestoryData/ModConfig/patternbuilder/patternbuilder.json`
+- **Windows**: `%APPDATA%\VintagestoryData\ModConfig\patternbuilder\patternbuilder.json`
+
+**Default configuration**:
+```json
+{
+  "requireToolsForCarving": true,
+  "harvestCarvedBlocks": true,
+  "durabilityPerBlock": 1
+}
+```
+
+**Settings**:
+- `requireToolsForCarving` (default: true) - Enable/disable tool durability consumption for carve mode patterns
+- `harvestCarvedBlocks` (default: true) - Whether to harvest broken blocks into player inventory
+- `durabilityPerBlock` (default: 1) - Tool durability cost per block broken
+
+**Notes**:
+- Config is server-authoritative (prevents client-side cheating in multiplayer)
+- Changes require server restart to take effect
+- Creative mode always bypasses tool requirements regardless of config
+
+---
 ## Known Issues
 
 See [documentation/ROADMAP.md](documentation/ROADMAP.md) for active issues and backlog.

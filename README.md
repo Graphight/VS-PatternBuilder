@@ -21,7 +21,8 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 - [x] Directional block support Use relative directions (`|f|b|l|r`) in patterns - adapts to travel direction
 - [x] Terrain following - roads adapt to elevation changes with stairs (walk, don't sprint on slopes)
 - [x] Tool durability use - carve mode consumes tools and harvests blocks in survival mode
-- [ ] In-game editor
+- [x] Pattern browser GUI with search, validation, and info panel
+- [ ] In-game pattern editor (planned)
 
 For more information look at the [ROADMAP.md](documentation/ROADMAP.md)
 
@@ -34,6 +35,14 @@ For more information look at the [ROADMAP.md](documentation/ROADMAP.md)
 
 ## Commands
 
+**Pattern Browser GUI** (NEW):
+- Press `Ctrl+Shift+Space` to open the pattern browser
+- Search/filter patterns by name
+- View validation status and block counts
+- Preview pattern details before selecting
+- Reload patterns from disk without closing dialog
+
+**Chat Commands**:
 ```
 .pb              Show command help (default)
 .pb help         Show command help
@@ -44,6 +53,7 @@ For more information look at the [ROADMAP.md](documentation/ROADMAP.md)
 .pb info         Show current pattern details
 .pb reload       Reload patterns from disk
 .pb preview      Toggle pattern preview on/off
+.pb browser      Open pattern browser GUI
 ```
 
 ---

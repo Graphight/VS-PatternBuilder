@@ -1,11 +1,36 @@
 # Roadmap
 
+## In Progress
+
+### GUI Features (Sessions 1-2 Complete, Sessions 3-5 Planned)
+**Status**: Pattern browser complete, editor planned
+**Branch**: feature/gui-pattern-editor
+**Documentation**: See `.claude/gui_feature_plan.md` and `.claude/session_notes/2025-12-29_GUI_Session_1_and_2_Notes.md`
+
+**Completed** (Sessions 1-2):
+- Pattern browser dialog with search/filter
+- Validation indicators per pattern
+- Info panel with block counts
+- Two-step pattern selection (preview then commit)
+- Reload patterns button
+- Hotkey: Ctrl+Shift+Space
+
+**Known Issues**:
+- Scrollbar displayed but not functional (deferred to next session)
+
+**Planned** (Sessions 3-5):
+- Session 3: 2D grid editor for pattern creation
+- Session 4: 3D slice navigation and management
+- Session 5: Search, import/export, undo/redo
+
+---
+
 ## Planned Features
 
 ### Tier 3: Advanced Features (Nice to Have)
 **Polish and power-user features that enhance but don't fundamentally change usage.**
 
-1. **In-game pattern editor** (GUI-based pattern creation)
+1. **In-game pattern editor** (GUI-based pattern creation) - IN PROGRESS (see above)
    - Visual grid editor for pattern design
    - Block picker from game blocks
    - Live preview of pattern

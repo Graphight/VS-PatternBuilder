@@ -10,18 +10,22 @@ public class PatternBrowserDialog : GuiDialog
 {
     private readonly PatternManager patternManager;
     private Action<int> onPatternSelected;
+    private Action onReloadRequested;
+    private string searchText = "";
 
     public override string ToggleKeyCombinationCode => "patternbrowser";
 
-    public PatternBrowserDialog(ICoreClientAPI capi, PatternManager patternManager, Action<int> onPatternSelected) : base(capi)
+    public PatternBrowserDialog(ICoreClientAPI capi, PatternManager patternManager, Action<int> onPatternSelected, Action onReloadRequested) : base(capi)
     {
         this.patternManager = patternManager;
         this.onPatternSelected = onPatternSelected;
+        this.onReloadRequested = onReloadRequested;
     }
 
     public override void OnGuiOpened()
     {
         base.OnGuiOpened();
+        searchText = "";
         SetupDialog();
     }
 
@@ -34,9 +38,12 @@ public class PatternBrowserDialog : GuiDialog
         ElementBounds bgBounds = ElementBounds.Fill.WithFixedPadding(GuiStyle.ElementToDialogPadding);
         bgBounds.BothSizing = ElementSizing.FitToChildren;
 
-        ElementBounds scrollBounds = ElementBounds.Fixed(0, 30, 500, 400);
+        ElementBounds searchLabelBounds = ElementBounds.Fixed(0, 35, 60, 25);
+        ElementBounds searchInputBounds = ElementBounds.Fixed(65, 30, 415, 30);
+        ElementBounds scrollBounds = ElementBounds.Fixed(0, 70, 480, 320);
         ElementBounds clipBounds = scrollBounds.ForkBoundingParent();
         ElementBounds insetBounds = scrollBounds.FlatCopy().FixedGrow(6).WithFixedOffset(-3, -3);
+        ElementBounds reloadButtonBounds = ElementBounds.Fixed(0, 400, 200, 30);
 
         ElementBounds scrollbarBounds = insetBounds.CopyOffsetedSibling(insetBounds.fixedWidth + 7, 0, 0, 0)
             .WithFixedWidth(20);
@@ -45,6 +52,8 @@ public class PatternBrowserDialog : GuiDialog
             .AddShadedDialogBG(bgBounds)
             .AddDialogTitleBar("Pattern Browser", OnClose)
             .BeginChildElements(bgBounds)
+                .AddStaticText("Search:", CairoFont.WhiteSmallText(), searchLabelBounds)
+                .AddTextInput(searchInputBounds, OnSearchChanged, CairoFont.WhiteDetailText(), "search-input")
                 .AddInset(insetBounds, 3)
                 .BeginClip(clipBounds);
 
@@ -58,21 +67,39 @@ public class PatternBrowserDialog : GuiDialog
 
             string slotText = $"Slot {slot}";
             string patternInfo = "Empty";
+            string patternName = "";
+            string validationIcon = " ";
 
             if (hasPattern)
             {
                 var pattern = patternManager.GetPatternInSlot(slot);
                 if (pattern != null)
                 {
+                    patternName = pattern.Name;
                     string mode = pattern.Mode == "carve" ? "C" : "A";
                     patternInfo = $"{pattern.Name} ({pattern.Width}x{pattern.Height}x{pattern.GetDepth()}) [{mode}]";
+
+                    var errors = pattern.GetValidationErrors(capi);
+                    if (errors.Count == 0)
+                    {
+                        validationIcon = "✓";
+                    }
+                    else
+                    {
+                        validationIcon = "✗";
+                    }
                 }
+            }
+
+            if (!string.IsNullOrEmpty(searchText) && !patternName.ToLowerInvariant().Contains(searchText.ToLowerInvariant()) && patternInfo != "Empty")
+            {
+                continue;
             }
 
             ElementBounds rowBounds = ElementBounds.Fixed(0, currentY, 480, 25);
 
             string prefix = isCurrent ? "> " : "  ";
-            string displayText = $"{prefix}{slotText}: {patternInfo}";
+            string displayText = $"{prefix}{validationIcon} {slotText}: {patternInfo}";
 
             CairoFont font = isCurrent
                 ? CairoFont.WhiteDetailText().WithWeight(Cairo.FontWeight.Bold)
@@ -86,10 +113,17 @@ public class PatternBrowserDialog : GuiDialog
         }
 
         composer.EndClip()
+            .AddSmallButton("Reload Patterns", OnReloadPatterns, reloadButtonBounds)
             .EndChildElements()
             .Compose();
 
         SingleComposer = composer;
+
+        var searchInput = SingleComposer.GetTextInput("search-input");
+        if (searchInput != null)
+        {
+            searchInput.SetValue(searchText);
+        }
     }
 
     private bool OnPatternRowClicked(int slot)
@@ -97,6 +131,23 @@ public class PatternBrowserDialog : GuiDialog
         capi.Logger.Notification($"Pattern browser: clicked slot {slot}");
         onPatternSelected?.Invoke(slot);
         TryClose();
+        return true;
+    }
+
+    private void OnSearchChanged(string text)
+    {
+        if (searchText == text) return;
+        searchText = text;
+
+        capi.Event.EnqueueMainThreadTask(() => {
+            SetupDialog();
+        }, "pattern-browser-filter");
+    }
+
+    private bool OnReloadPatterns()
+    {
+        onReloadRequested?.Invoke();
+        SetupDialog();
         return true;
     }
 

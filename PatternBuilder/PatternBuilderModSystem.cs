@@ -186,7 +186,7 @@ public class PatternBuilderModSystem : ModSystem
         previewManager = new PreviewManager(api, previewRenderer, patternManager, blockIdCache);
         terrainFollowingManager = new TerrainFollowingManager(api);
 
-        patternBrowserDialog = new PatternBrowserDialog(api, patternManager, OnPatternSelected);
+        patternBrowserDialog = new PatternBrowserDialog(api, patternManager, OnPatternSelected, OnReloadPatternsFromDialog);
 
         RegisterCommands(api);
         RegisterHotkeys(api);
@@ -273,7 +273,7 @@ public class PatternBuilderModSystem : ModSystem
 
     private void RegisterHotkeys(ICoreClientAPI api)
     {
-        api.Input.RegisterHotKey("patternbrowser", "Open Pattern Browser", GlKeys.B, HotkeyType.GUIOrOtherControls);
+        api.Input.RegisterHotKey("patternbrowser", "Open Pattern Browser", GlKeys.Space, HotkeyType.GUIOrOtherControls, ctrlPressed: true, shiftPressed: true);
         api.Input.SetHotKeyHandler("patternbrowser", TogglePatternBrowser);
     }
 
@@ -302,6 +302,13 @@ public class PatternBuilderModSystem : ModSystem
         {
             clientApi.ShowChatMessage($"Failed to switch to slot {slot}");
         }
+    }
+
+    private void OnReloadPatternsFromDialog()
+    {
+        LoadPatterns();
+        CacheBlockIdsForPattern(patternManager.GetCurrentPattern());
+        clientApi.ShowChatMessage("Patterns reloaded from disk");
     }
 
     private TextCommandResult OnCommandBrowser(TextCommandCallingArgs args)

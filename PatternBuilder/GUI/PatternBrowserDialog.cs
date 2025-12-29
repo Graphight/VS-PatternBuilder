@@ -17,6 +17,11 @@ public class PatternBrowserDialog : GuiDialog
     {
         this.patternManager = patternManager;
         this.onPatternSelected = onPatternSelected;
+    }
+
+    public override void OnGuiOpened()
+    {
+        base.OnGuiOpened();
         SetupDialog();
     }
 
@@ -66,15 +71,16 @@ public class PatternBrowserDialog : GuiDialog
 
             ElementBounds rowBounds = ElementBounds.Fixed(0, currentY, 480, 25);
 
+            string prefix = isCurrent ? "> " : "  ";
+            string displayText = $"{prefix}{slotText}: {patternInfo}";
+
             CairoFont font = isCurrent
                 ? CairoFont.WhiteDetailText().WithWeight(Cairo.FontWeight.Bold)
                 : CairoFont.WhiteDetailText();
 
-            string displayText = $"{slotText}: {patternInfo}";
-
             int capturedSlot = slot;
 
-            composer.AddButton(displayText, () => OnPatternRowClicked(capturedSlot), rowBounds, CairoFont.WhiteDetailText(), EnumButtonStyle.MainMenu, $"btn-slot-{slot}");
+            composer.AddButton(displayText, () => OnPatternRowClicked(capturedSlot), rowBounds, font, EnumButtonStyle.MainMenu, $"btn-slot-{slot}");
 
             currentY += 27;
         }

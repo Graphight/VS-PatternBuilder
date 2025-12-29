@@ -14,9 +14,7 @@
 - Two-step pattern selection (preview then commit)
 - Reload patterns button
 - Hotkey: Ctrl+Shift+Space
-
-**Known Issues**:
-- Scrollbar displayed but not functional (deferred to next session)
+- Functional scrollbars for pattern list and info panel
 
 **Planned** (Sessions 3-5):
 - Session 3: 2D grid editor for pattern creation

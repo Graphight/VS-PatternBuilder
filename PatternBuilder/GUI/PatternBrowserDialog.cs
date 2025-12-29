@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using PatternBuilder.Pattern;
 using Vintagestory.API.Client;
+using Vintagestory.API.Common;
 using Vintagestory.API.Config;
 
 namespace PatternBuilder.GUI;
@@ -44,9 +46,9 @@ public class PatternBrowserDialog : GuiDialog
         ElementBounds scrollBounds = ElementBounds.Fixed(0, 70, 480, 240);
         ElementBounds clipBounds = scrollBounds.ForkBoundingParent();
         ElementBounds insetBounds = scrollBounds.FlatCopy().FixedGrow(6).WithFixedOffset(-3, -3);
-        ElementBounds infoPanelBounds = ElementBounds.Fixed(0, 320, 480, 80);
-        ElementBounds selectButtonBounds = ElementBounds.Fixed(210, 410, 200, 30);
-        ElementBounds reloadButtonBounds = ElementBounds.Fixed(0, 410, 200, 30);
+        ElementBounds infoPanelBounds = ElementBounds.Fixed(0, 320, 480, 160);
+        ElementBounds selectButtonBounds = ElementBounds.Fixed(210, 490, 200, 30);
+        ElementBounds reloadButtonBounds = ElementBounds.Fixed(0, 490, 200, 30);
 
         ElementBounds scrollbarBounds = insetBounds.CopyOffsetedSibling(insetBounds.fixedWidth + 7, 0, 0, 0)
             .WithFixedWidth(20);
@@ -116,6 +118,7 @@ public class PatternBrowserDialog : GuiDialog
         }
 
         composer.EndClip()
+            .AddVerticalScrollbar(OnScroll, scrollbarBounds, "scrollbar")
             .AddInset(infoPanelBounds.FlatCopy().FixedGrow(3), 2)
             .AddDynamicText("", CairoFont.WhiteSmallText(), infoPanelBounds.FlatCopy().WithFixedPadding(5), "info-text")
             .AddSmallButton("Reload Patterns", OnReloadPatterns, reloadButtonBounds)
@@ -124,6 +127,11 @@ public class PatternBrowserDialog : GuiDialog
             .Compose();
 
         SingleComposer = composer;
+
+        SingleComposer.GetScrollbar("scrollbar").SetHeights(
+            (float)scrollBounds.fixedHeight,
+            (float)(currentY)
+        );
 
         var searchInput = SingleComposer.GetTextInput("search-input");
         if (searchInput != null)
@@ -161,12 +169,74 @@ public class PatternBrowserDialog : GuiDialog
         var errors = pattern.GetValidationErrors(capi);
         string info = $"{pattern.Name}\n{pattern.Description ?? "No description"}";
 
+        var blockCounts = GetBlockCounts(pattern);
+        if (blockCounts.Count > 0)
+        {
+            int sliceCount = pattern.GetDepth();
+            string cycleText = sliceCount > 1 ? $"cycle ({sliceCount} slices)" : "placement";
+            info += $"\n\nBlocks per {cycleText}:";
+            foreach (var kvp in blockCounts.OrderByDescending(x => x.Value))
+            {
+                info += $"\n- {kvp.Key}: {kvp.Value}";
+            }
+        }
+
         if (errors.Count > 0)
         {
             info += $"\n\nErrors:\n- {string.Join("\n- ", errors)}";
         }
 
         infoText.SetNewText(info);
+    }
+
+    private Dictionary<string, int> GetBlockCounts(PatternDefinition pattern)
+    {
+        var counts = new Dictionary<string, int>();
+        int sliceCount = pattern.GetDepth();
+
+        for (int sliceIdx = 0; sliceIdx < sliceCount; sliceIdx++)
+        {
+            if (!pattern.ParsePattern(sliceIdx))
+                continue;
+
+            for (int y = 0; y < pattern.Height; y++)
+            {
+                for (int x = 0; x < pattern.Width; x++)
+                {
+                    string blockCode = pattern.GetBlockAt(x, y);
+                    if (blockCode == null || blockCode == "air")
+                        continue;
+
+                    string displayName = GetBlockDisplayName(blockCode);
+                    if (!counts.ContainsKey(displayName))
+                        counts[displayName] = 0;
+                    counts[displayName]++;
+                }
+            }
+        }
+
+        return counts;
+    }
+
+    private string GetBlockDisplayName(string blockCode)
+    {
+        if (blockCode.Contains("*"))
+        {
+            var parts = blockCode.Split('-');
+            if (parts.Length > 0)
+            {
+                string blockType = parts[0].Replace("game:", "").Replace("*", "any");
+                return char.ToUpper(blockType[0]) + blockType.Substring(1);
+            }
+        }
+
+        var block = capi.World.GetBlock(new AssetLocation(blockCode.Split('|')[0]));
+        if (block != null)
+        {
+            return block.GetHeldItemName(new Vintagestory.API.Common.ItemStack(block));
+        }
+
+        return blockCode.Replace("game:", "");
     }
 
     private bool OnPatternRowClicked(int slot)
@@ -204,6 +274,16 @@ public class PatternBrowserDialog : GuiDialog
         capi.Event.EnqueueMainThreadTask(() => {
             SetupDialog();
         }, "pattern-browser-filter");
+    }
+
+    private void OnScroll(float value)
+    {
+        ElementBounds bounds = SingleComposer.GetButton("btn-slot-1")?.Bounds;
+        if (bounds != null)
+        {
+            bounds.fixedY = 0 - value;
+            bounds.CalcWorldBounds();
+        }
     }
 
     private bool OnReloadPatterns()

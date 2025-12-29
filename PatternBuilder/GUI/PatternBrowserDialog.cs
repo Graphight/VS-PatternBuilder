@@ -15,6 +15,7 @@ public class PatternBrowserDialog : GuiDialog
     private Action onReloadRequested;
     private string searchText = "";
     private int selectedSlot = -1;
+    private Dictionary<int, double> buttonOriginalY = new Dictionary<int, double>();
 
     public override string ToggleKeyCombinationCode => "patternbrowser";
 
@@ -34,6 +35,8 @@ public class PatternBrowserDialog : GuiDialog
 
     private void SetupDialog()
     {
+        buttonOriginalY.Clear();
+
         ElementBounds dialogBounds = ElementStdBounds.AutosizedMainDialog
             .WithAlignment(EnumDialogArea.CenterMiddle)
             .WithFixedAlignmentOffset(0, 0);
@@ -46,11 +49,18 @@ public class PatternBrowserDialog : GuiDialog
         ElementBounds scrollBounds = ElementBounds.Fixed(0, 70, 480, 240);
         ElementBounds clipBounds = scrollBounds.ForkBoundingParent();
         ElementBounds insetBounds = scrollBounds.FlatCopy().FixedGrow(6).WithFixedOffset(-3, -3);
-        ElementBounds infoPanelBounds = ElementBounds.Fixed(0, 320, 480, 160);
+
+        ElementBounds infoPanelBounds = ElementBounds.Fixed(0, 320, 460, 160);
+        ElementBounds infoClipBounds = infoPanelBounds.ForkBoundingParent();
+        ElementBounds infoInsetBounds = infoPanelBounds.FlatCopy().FixedGrow(6).WithFixedOffset(-3, -3);
+
         ElementBounds selectButtonBounds = ElementBounds.Fixed(210, 490, 200, 30);
         ElementBounds reloadButtonBounds = ElementBounds.Fixed(0, 490, 200, 30);
 
         ElementBounds scrollbarBounds = insetBounds.CopyOffsetedSibling(insetBounds.fixedWidth + 7, 0, 0, 0)
+            .WithFixedWidth(20);
+
+        ElementBounds infoScrollbarBounds = infoInsetBounds.CopyOffsetedSibling(infoInsetBounds.fixedWidth + 7, 0, 0, 0)
             .WithFixedWidth(20);
 
         var composer = capi.Gui.CreateCompo("patternbrowser", dialogBounds)
@@ -112,6 +122,7 @@ public class PatternBrowserDialog : GuiDialog
 
             int capturedSlot = slot;
 
+            buttonOriginalY[slot] = currentY;
             composer.AddButton(displayText, () => OnPatternRowClicked(capturedSlot), rowBounds, font, EnumButtonStyle.MainMenu, $"btn-slot-{slot}");
 
             currentY += 27;
@@ -119,8 +130,11 @@ public class PatternBrowserDialog : GuiDialog
 
         composer.EndClip()
             .AddVerticalScrollbar(OnScroll, scrollbarBounds, "scrollbar")
-            .AddInset(infoPanelBounds.FlatCopy().FixedGrow(3), 2)
+            .AddInset(infoInsetBounds, 3)
+            .BeginClip(infoClipBounds)
             .AddDynamicText("", CairoFont.WhiteSmallText(), infoPanelBounds.FlatCopy().WithFixedPadding(5), "info-text")
+            .EndClip()
+            .AddVerticalScrollbar(OnInfoScroll, infoScrollbarBounds, "info-scrollbar")
             .AddSmallButton("Reload Patterns", OnReloadPatterns, reloadButtonBounds)
             .AddSmallButton("Select Pattern", OnSelectPattern, selectButtonBounds)
             .EndChildElements()
@@ -187,6 +201,13 @@ public class PatternBrowserDialog : GuiDialog
         }
 
         infoText.SetNewText(info);
+
+        var infoScrollbar = SingleComposer?.GetScrollbar("info-scrollbar");
+        if (infoScrollbar != null)
+        {
+            double textHeight = infoText.Font.GetTextExtents(info).Height / RuntimeEnv.GUIScale;
+            infoScrollbar.SetHeights(160f, (float)textHeight);
+        }
     }
 
     private Dictionary<string, int> GetBlockCounts(PatternDefinition pattern)
@@ -278,11 +299,27 @@ public class PatternBrowserDialog : GuiDialog
 
     private void OnScroll(float value)
     {
-        ElementBounds bounds = SingleComposer.GetButton("btn-slot-1")?.Bounds;
-        if (bounds != null)
+        foreach (var kvp in buttonOriginalY)
         {
-            bounds.fixedY = 0 - value;
-            bounds.CalcWorldBounds();
+            int slot = kvp.Key;
+            double originalY = kvp.Value;
+
+            var button = SingleComposer.GetButton($"btn-slot-{slot}");
+            if (button != null)
+            {
+                button.Bounds.fixedY = originalY - value;
+                button.Bounds.CalcWorldBounds();
+            }
+        }
+    }
+
+    private void OnInfoScroll(float value)
+    {
+        var infoText = SingleComposer?.GetDynamicText("info-text");
+        if (infoText != null)
+        {
+            infoText.Bounds.fixedY = 0 - value;
+            infoText.Bounds.CalcWorldBounds();
         }
     }
 

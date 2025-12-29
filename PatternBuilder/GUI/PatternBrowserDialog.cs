@@ -12,6 +12,7 @@ public class PatternBrowserDialog : GuiDialog
     private Action<int> onPatternSelected;
     private Action onReloadRequested;
     private string searchText = "";
+    private int selectedSlot = -1;
 
     public override string ToggleKeyCombinationCode => "patternbrowser";
 
@@ -40,10 +41,12 @@ public class PatternBrowserDialog : GuiDialog
 
         ElementBounds searchLabelBounds = ElementBounds.Fixed(0, 35, 60, 25);
         ElementBounds searchInputBounds = ElementBounds.Fixed(65, 30, 415, 30);
-        ElementBounds scrollBounds = ElementBounds.Fixed(0, 70, 480, 320);
+        ElementBounds scrollBounds = ElementBounds.Fixed(0, 70, 480, 240);
         ElementBounds clipBounds = scrollBounds.ForkBoundingParent();
         ElementBounds insetBounds = scrollBounds.FlatCopy().FixedGrow(6).WithFixedOffset(-3, -3);
-        ElementBounds reloadButtonBounds = ElementBounds.Fixed(0, 400, 200, 30);
+        ElementBounds infoPanelBounds = ElementBounds.Fixed(0, 320, 480, 80);
+        ElementBounds selectButtonBounds = ElementBounds.Fixed(210, 410, 200, 30);
+        ElementBounds reloadButtonBounds = ElementBounds.Fixed(0, 410, 200, 30);
 
         ElementBounds scrollbarBounds = insetBounds.CopyOffsetedSibling(insetBounds.fixedWidth + 7, 0, 0, 0)
             .WithFixedWidth(20);
@@ -113,7 +116,10 @@ public class PatternBrowserDialog : GuiDialog
         }
 
         composer.EndClip()
+            .AddInset(infoPanelBounds.FlatCopy().FixedGrow(3), 2)
+            .AddDynamicText("", CairoFont.WhiteSmallText(), infoPanelBounds.FlatCopy().WithFixedPadding(5), "info-text")
             .AddSmallButton("Reload Patterns", OnReloadPatterns, reloadButtonBounds)
+            .AddSmallButton("Select Pattern", OnSelectPattern, selectButtonBounds)
             .EndChildElements()
             .Compose();
 
@@ -124,12 +130,68 @@ public class PatternBrowserDialog : GuiDialog
         {
             searchInput.SetValue(searchText);
         }
+
+        UpdateInfoPanel();
+    }
+
+    private void UpdateInfoPanel()
+    {
+        var infoText = SingleComposer?.GetDynamicText("info-text");
+        if (infoText == null) return;
+
+        if (selectedSlot < 1 || selectedSlot > PatternManager.MaxSlots)
+        {
+            infoText.SetNewText("Click a pattern to see details");
+            return;
+        }
+
+        if (!patternManager.HasPatternInSlot(selectedSlot))
+        {
+            infoText.SetNewText($"Slot {selectedSlot}: Empty");
+            return;
+        }
+
+        var pattern = patternManager.GetPatternInSlot(selectedSlot);
+        if (pattern == null)
+        {
+            infoText.SetNewText($"Slot {selectedSlot}: Error loading pattern");
+            return;
+        }
+
+        var errors = pattern.GetValidationErrors(capi);
+        string info = $"{pattern.Name}\n{pattern.Description ?? "No description"}";
+
+        if (errors.Count > 0)
+        {
+            info += $"\n\nErrors:\n- {string.Join("\n- ", errors)}";
+        }
+
+        infoText.SetNewText(info);
     }
 
     private bool OnPatternRowClicked(int slot)
     {
-        capi.Logger.Notification($"Pattern browser: clicked slot {slot}");
-        onPatternSelected?.Invoke(slot);
+        selectedSlot = slot;
+        UpdateInfoPanel();
+        return true;
+    }
+
+    private bool OnSelectPattern()
+    {
+        if (selectedSlot < 1 || selectedSlot > PatternManager.MaxSlots)
+        {
+            capi.ShowChatMessage("Please select a pattern first");
+            return true;
+        }
+
+        if (!patternManager.HasPatternInSlot(selectedSlot))
+        {
+            capi.ShowChatMessage($"Slot {selectedSlot} is empty");
+            return true;
+        }
+
+        capi.Logger.Notification($"Pattern browser: selected slot {selectedSlot}");
+        onPatternSelected?.Invoke(selectedSlot);
         TryClose();
         return true;
     }

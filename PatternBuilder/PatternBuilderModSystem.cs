@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using PatternBuilder.Config;
+using PatternBuilder.GUI;
 using PatternBuilder.Inventory;
 using PatternBuilder.Networking;
 using PatternBuilder.Pattern;
@@ -47,6 +48,7 @@ public class PatternBuilderModSystem : ModSystem
     private PreviewRenderer previewRenderer;
     private PreviewManager previewManager;
     private TerrainFollowingManager terrainFollowingManager;
+    private PatternBrowserDialog patternBrowserDialog;
 
     private IClientNetworkChannel clientChannel;
     private IServerNetworkChannel serverChannel;
@@ -184,7 +186,10 @@ public class PatternBuilderModSystem : ModSystem
         previewManager = new PreviewManager(api, previewRenderer, patternManager, blockIdCache);
         terrainFollowingManager = new TerrainFollowingManager(api);
 
+        patternBrowserDialog = new PatternBrowserDialog(api, patternManager, OnPatternSelected);
+
         RegisterCommands(api);
+        RegisterHotkeys(api);
 
         tickListenerId = clientApi.Event.RegisterGameTickListener(OnGameTick, NormalTickIntervalMs);
 
@@ -259,7 +264,50 @@ public class PatternBuilderModSystem : ModSystem
                 .WithDescription("Toggle pattern preview on/off")
                 .HandleWith(OnCommandPreview)
             .EndSubCommand()
+            .BeginSubCommand("browser")
+                .WithDescription("Open pattern browser GUI")
+                .HandleWith(OnCommandBrowser)
+            .EndSubCommand()
             .HandleWith(OnCommandHelp);
+    }
+
+    private void RegisterHotkeys(ICoreClientAPI api)
+    {
+        api.Input.RegisterHotKey("patternbrowser", "Open Pattern Browser", GlKeys.B, HotkeyType.GUIOrOtherControls);
+        api.Input.SetHotKeyHandler("patternbrowser", TogglePatternBrowser);
+    }
+
+    private bool TogglePatternBrowser(KeyCombination comb)
+    {
+        if (patternBrowserDialog.IsOpened())
+        {
+            patternBrowserDialog.TryClose();
+        }
+        else
+        {
+            patternBrowserDialog.TryOpen();
+        }
+        return true;
+    }
+
+    private void OnPatternSelected(int slot)
+    {
+        if (patternManager.SwitchToSlot(slot))
+        {
+            CacheBlockIdsForPattern(patternManager.GetCurrentPattern());
+            var pattern = patternManager.GetCurrentPattern();
+            clientApi.ShowChatMessage($"Switched to slot {slot}: {pattern.Name}");
+        }
+        else
+        {
+            clientApi.ShowChatMessage($"Failed to switch to slot {slot}");
+        }
+    }
+
+    private TextCommandResult OnCommandBrowser(TextCommandCallingArgs args)
+    {
+        patternBrowserDialog.TryOpen();
+        return TextCommandResult.Success();
     }
 
     private TextCommandResult OnCommandToggle(TextCommandCallingArgs args)

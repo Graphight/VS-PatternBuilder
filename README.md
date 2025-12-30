@@ -22,7 +22,7 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 - [x] Terrain following - roads adapt to elevation changes with stairs (walk, don't sprint on slopes)
 - [x] Tool durability use - carve mode consumes tools and harvests blocks in survival mode
 - [x] Pattern browser GUI with search, validation, and info panel
-- [ ] In-game pattern editor (planned)
+- [x] In-game pattern editor (2D) - create and edit patterns without touching JSON files
 
 For more information look at the [ROADMAP.md](documentation/ROADMAP.md)
 
@@ -35,12 +35,21 @@ For more information look at the [ROADMAP.md](documentation/ROADMAP.md)
 
 ## Commands
 
-**Pattern Browser GUI** (NEW):
-- Press `Ctrl+Shift+Space` to open the pattern browser
+**Pattern Browser GUI**:
+- Press `Ctrl+Shift+Space` or use `.pb browser` to open
 - Search/filter patterns by name
 - View validation status and block counts
 - Preview pattern details before selecting
 - Reload patterns from disk without closing dialog
+
+**Pattern Editor GUI** (NEW):
+- Use `.pb edit [slot]` to open the pattern editor
+- Create new patterns or edit existing ones
+- 2D grid editor with clickable cells (up to 15x15)
+- Block picker with 16 common blocks
+- Visual pattern building without editing JSON
+- Auto-validates before saving
+- Current limitation: Only supports single-slice (2D) patterns
 
 **Chat Commands**:
 ```
@@ -54,6 +63,7 @@ For more information look at the [ROADMAP.md](documentation/ROADMAP.md)
 .pb reload       Reload patterns from disk
 .pb preview      Toggle pattern preview on/off
 .pb browser      Open pattern browser GUI
+.pb edit [slot]  Open pattern editor (defaults to current slot)
 ```
 
 ---

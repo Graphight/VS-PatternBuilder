@@ -36,10 +36,25 @@
    - Import/export pattern JSON
    - Must support 3D patterns (slice editor)
 
+2. **Unified GUI dashboard with tab navigation**
+    - Single entry point dialog with tab system
+    - Tabs: Home (quick controls), Browser, Editor, Settings
+    - Home tab: On/Off/Toggle buttons, current pattern info, stats
+    - Consolidates separate dialogs into cohesive interface
+    - **Complexity**: Medium - requires dialog refactoring and tab UI implementation
+
+3. **Enhanced block picker for editor GUI (creative inventory style)**
+    - Visual block icons/textures instead of text labels
+    - Category tabs (stone, wood, soil, functional, etc.)
+    - Search/filter within categories
+    - Support for all blocks including modded content
+    - Reference: VS creative mode inventory system
+    - **Complexity**: Medium - texture rendering, category organization
+
 ### Tier 4: Polish & Community Features
 **Deferred until core functionality is solid.**
 
-2. **Pattern export/sharing system**
+1. **Pattern export/sharing system**
    - Copy pattern JSON to clipboard
    - Import patterns from clipboard or URL
    - Pattern library browser (community patterns)

@@ -224,6 +224,10 @@ public class PatternEditorDialog : GuiDialog
         ElementBounds nextSliceBounds = ElementBounds.Fixed(360, currentY, 100, 30);
         currentY += 40;
 
+        ElementBounds addSliceBounds = ElementBounds.Fixed(0, currentY, 120, 30);
+        ElementBounds deleteSliceBounds = ElementBounds.Fixed(130, currentY, 120, 30);
+        currentY += 40;
+
         double gridStartY = currentY;
         ElementBounds gridContainerBounds = ElementBounds.Fixed(0, currentY, 450, 400);
         ElementBounds blockPickerBounds = ElementBounds.Fixed(460, currentY, 250, 400);
@@ -256,7 +260,9 @@ public class PatternEditorDialog : GuiDialog
                 .AddSmallButton("Resize Grid", OnResizeGrid, resizeButtonBounds)
                 .AddSmallButton("< Prev Slice", OnPreviousSlice, prevSliceBounds)
                 .AddStaticText($"Slice {currentSliceIndex + 1} of {slices.Count}", CairoFont.WhiteSmallText(), sliceCounterBounds, "slice-counter")
-                .AddSmallButton("Next Slice >", OnNextSlice, nextSliceBounds);
+                .AddSmallButton("Next Slice >", OnNextSlice, nextSliceBounds)
+                .AddSmallButton("Add Slice", OnAddSlice, addSliceBounds)
+                .AddSmallButton("Delete Slice", OnDeleteSlice, deleteSliceBounds);
 
         double cellSize = 28;
         double gridSpacing = 2;
@@ -392,6 +398,50 @@ public class PatternEditorDialog : GuiDialog
         {
             capi.ShowChatMessage("Already at last slice");
         }
+        return true;
+    }
+
+    private bool OnAddSlice()
+    {
+        var currentGrid = slices[currentSliceIndex];
+        var newGrid = new char[gridHeight, gridWidth];
+
+        for (int y = 0; y < gridHeight; y++)
+        {
+            for (int x = 0; x < gridWidth; x++)
+            {
+                newGrid[y, x] = currentGrid[y, x];
+            }
+        }
+
+        slices.Insert(currentSliceIndex + 1, newGrid);
+        currentSliceIndex++;
+
+        capi.Logger.Notification($"PatternEditor: Added new slice at index {currentSliceIndex}. Total slices: {slices.Count}");
+        capi.ShowChatMessage($"Added slice {currentSliceIndex + 1} (copy of previous slice)");
+        RefreshGrid();
+        return true;
+    }
+
+    private bool OnDeleteSlice()
+    {
+        if (slices.Count <= 1)
+        {
+            capi.ShowChatMessage("Cannot delete the last remaining slice");
+            return true;
+        }
+
+        int deletedIndex = currentSliceIndex;
+        slices.RemoveAt(currentSliceIndex);
+
+        if (currentSliceIndex >= slices.Count)
+        {
+            currentSliceIndex = slices.Count - 1;
+        }
+
+        capi.Logger.Notification($"PatternEditor: Deleted slice at index {deletedIndex}. Total slices: {slices.Count}. Now at slice {currentSliceIndex}");
+        capi.ShowChatMessage($"Deleted slice {deletedIndex + 1}. Now at slice {currentSliceIndex + 1}");
+        RefreshGrid();
         return true;
     }
 

@@ -49,6 +49,7 @@ public class PatternBuilderModSystem : ModSystem
     private PreviewManager previewManager;
     private TerrainFollowingManager terrainFollowingManager;
     private PatternBrowserDialog patternBrowserDialog;
+    private PatternEditorDialog patternEditorDialog;
 
     private IClientNetworkChannel clientChannel;
     private IServerNetworkChannel serverChannel;
@@ -187,6 +188,7 @@ public class PatternBuilderModSystem : ModSystem
         terrainFollowingManager = new TerrainFollowingManager(api);
 
         patternBrowserDialog = new PatternBrowserDialog(api, patternManager, OnPatternSelected, OnReloadPatternsFromDialog);
+        patternEditorDialog = new PatternEditorDialog(api, OnPatternSavedFromEditor);
 
         RegisterCommands(api);
         RegisterHotkeys(api);
@@ -268,6 +270,11 @@ public class PatternBuilderModSystem : ModSystem
                 .WithDescription("Open pattern browser GUI")
                 .HandleWith(OnCommandBrowser)
             .EndSubCommand()
+            .BeginSubCommand("edit")
+                .WithDescription("Open pattern editor GUI (optional: specify slot number)")
+                .WithArgs(api.ChatCommands.Parsers.OptionalInt("slot"))
+                .HandleWith(OnCommandEdit)
+            .EndSubCommand()
             .HandleWith(OnCommandHelp);
     }
 
@@ -315,6 +322,43 @@ public class PatternBuilderModSystem : ModSystem
     {
         patternBrowserDialog.TryOpen();
         return TextCommandResult.Success();
+    }
+
+    private TextCommandResult OnCommandEdit(TextCommandCallingArgs args)
+    {
+        int slot;
+        if (args.Parsers[0].IsMissing)
+        {
+            slot = patternManager.GetCurrentSlot();
+        }
+        else
+        {
+            slot = (int)args.Parsers[0].GetValue();
+        }
+
+        if (slot < 1 || slot > PatternManager.MaxSlots)
+        {
+            return TextCommandResult.Error($"Invalid slot number. Use 1-{PatternManager.MaxSlots}");
+        }
+
+        var existingPattern = patternManager.GetPatternInSlot(slot);
+        if (existingPattern != null)
+        {
+            patternEditorDialog.OpenForExistingPattern(slot, existingPattern);
+        }
+        else
+        {
+            patternEditorDialog.OpenForNewPattern(slot);
+        }
+
+        return TextCommandResult.Success();
+    }
+
+    private void OnPatternSavedFromEditor(int slot)
+    {
+        LoadPatterns();
+        CacheBlockIdsForPattern(patternManager.GetCurrentPattern());
+        clientApi.ShowChatMessage($"Pattern saved to slot {slot} and reloaded");
     }
 
     private TextCommandResult OnCommandToggle(TextCommandCallingArgs args)

@@ -89,6 +89,16 @@ public class PatternManager
         return null;
     }
 
+    public PatternDefinition GetPatternInSlot(int slot)
+    {
+        if (patterns.TryGetValue(slot, out var pattern))
+        {
+            return pattern;
+        }
+
+        return null;
+    }
+
     private int FindFirstAvailableSlot()
     {
         for (int i = 1; i <= MaxSlots; i++)

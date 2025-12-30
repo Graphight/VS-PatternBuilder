@@ -21,7 +21,13 @@ A Vintage Story mod that automates placement of repeating block patterns (roads,
 - [x] Directional block support Use relative directions (`|f|b|l|r`) in patterns - adapts to travel direction
 - [x] Terrain following - roads adapt to elevation changes with stairs (walk, don't sprint on slopes)
 - [x] Tool durability use - carve mode consumes tools and harvests blocks in survival mode
-- [ ] In-game editor
+- [x] Pattern browser GUI with search, validation, and info panel
+- [x] In-game pattern editor (2D + 3D) - create and edit patterns without touching JSON files
+  - Grid painting with enhanced block picker (500+ blocks searchable)
+  - Eyedropper tool to sample blocks from grid
+  - Import/Export patterns via JSON clipboard
+  - 3D slice navigation and management (add/delete/copy/paste slices)
+  - Pattern validation and metadata editing
 
 For more information look at the [ROADMAP.md](documentation/ROADMAP.md)
 
@@ -34,6 +40,37 @@ For more information look at the [ROADMAP.md](documentation/ROADMAP.md)
 
 ## Commands
 
+**Pattern Browser GUI**:
+- Press `Ctrl+Shift+Space` or use `.pb browser` to open
+- Search/filter patterns by name
+- View validation status and block counts
+- Preview pattern details before selecting
+- Reload patterns from disk without closing dialog
+
+**Pattern Editor GUI**:
+- Use `.pb edit [slot]` to open the pattern editor
+- Create new patterns or edit existing ones
+- Grid editor with clickable cells (up to 15x15)
+- **Enhanced block picker**:
+  - Search 500+ game blocks by name
+  - Dynamic character assignment (A-Z, a-z, 0-9)
+  - Click "Search" to filter blocks after typing
+- **Eyedropper tool**:
+  - Toggle "Pick" mode to sample blocks from grid cells
+  - Identify and select existing blocks in pattern
+- **Import/Export**:
+  - Export pattern to JSON (copies to clipboard)
+  - Import pattern from JSON (loads from clipboard)
+  - Share patterns with other players
+- **3D pattern support**:
+  - Navigate slices with prev/next buttons
+  - Add/delete slices (copies current slice when adding)
+  - Copy/paste slices for quick duplication
+  - Slice counter shows position (e.g., "Slice 3 of 8")
+- Visual pattern building without editing JSON
+- Auto-validates before saving
+
+**Chat Commands**:
 ```
 .pb              Show command help (default)
 .pb help         Show command help
@@ -44,6 +81,8 @@ For more information look at the [ROADMAP.md](documentation/ROADMAP.md)
 .pb info         Show current pattern details
 .pb reload       Reload patterns from disk
 .pb preview      Toggle pattern preview on/off
+.pb browser      Open pattern browser GUI
+.pb edit [slot]  Open pattern editor (defaults to current slot)
 ```
 
 ---

@@ -22,14 +22,14 @@ public class PatternEditorDialog : GuiDialog
     private int gridWidth = 5;
     private int gridHeight = 5;
 
-    private List<char[,]> slices;
-    private int currentSliceIndex = 0;
-    private char[,] clipboardSlice = null;
-    private char selectedBlockChar = 'B';
-    private string selectedBlockCode = "game:cobblestone-granite";
+    private List<char[,]> listSlices;
+    private int indexSliceCurrent = 0;
+    private char[,] sliceClipboard = null;
+    private char charBlockSelected = 'B';
+    private string codeBlockSelected = "game:cobblestone-granite";
 
-    private Dictionary<char, string> blockMappings;
-    private List<(char character, string blockCode, string displayName)> availableBlocks;
+    private Dictionary<char, string> mapBlocks;
+    private List<(char character, string blockCode, string displayName)> listBlocksAvailable;
 
     public override string ToggleKeyCombinationCode => "patterneditor";
 
@@ -76,7 +76,7 @@ public class PatternEditorDialog : GuiDialog
 
     private void InitializeAvailableBlocks()
     {
-        availableBlocks = new List<(char, string, string)>
+        listBlocksAvailable = new List<(char, string, string)>
         {
             ('_', "air", "Air (Empty)"),
             ('B', "game:cobblestone-granite", "Cobblestone"),
@@ -96,16 +96,16 @@ public class PatternEditorDialog : GuiDialog
             ('P', "player", "Player"),
         };
 
-        blockMappings = new Dictionary<char, string>();
-        foreach (var (character, blockCode, _) in availableBlocks)
+        mapBlocks = new Dictionary<char, string>();
+        foreach (var (character, blockCode, _) in listBlocksAvailable)
         {
-            blockMappings[character] = blockCode;
+            mapBlocks[character] = blockCode;
         }
     }
 
     private void InitializeEmptyGrid()
     {
-        slices = new List<char[,]>();
+        listSlices = new List<char[,]>();
         var grid = new char[gridHeight, gridWidth];
 
         for (int y = 0; y < gridHeight; y++)
@@ -121,14 +121,14 @@ public class PatternEditorDialog : GuiDialog
             grid[0, gridWidth / 2] = 'P';
         }
 
-        slices.Add(grid);
-        currentSliceIndex = 0;
+        listSlices.Add(grid);
+        indexSliceCurrent = 0;
     }
 
     private void LoadPatternIntoGrid(PatternDefinition pattern)
     {
-        slices = new List<char[,]>();
-        blockMappings = new Dictionary<char, string>(pattern.Blocks);
+        listSlices = new List<char[,]>();
+        mapBlocks = new Dictionary<char, string>(pattern.Blocks);
 
         capi.Logger.Notification($"PatternEditor: Loading pattern with {pattern.Slices.Length} slice(s). Width={gridWidth}, Height={gridHeight}");
 
@@ -175,106 +175,106 @@ public class PatternEditorDialog : GuiDialog
                 }
             }
 
-            slices.Add(grid);
+            listSlices.Add(grid);
         }
 
-        if (slices.Count == 0)
+        if (listSlices.Count == 0)
         {
-            capi.Logger.Warning($"PatternEditor: No valid slices loaded. Initializing empty grid.");
+            capi.Logger.Warning($"PatternEditor: No valid listSlices loaded. Initializing empty grid.");
             InitializeEmptyGrid();
         }
         else
         {
-            currentSliceIndex = 0;
-            capi.Logger.Notification($"PatternEditor: Loaded {slices.Count} slice(s). First slice, first row: {new string(Enumerable.Range(0, gridWidth).Select(x => slices[0][0, x]).ToArray())}");
+            indexSliceCurrent = 0;
+            capi.Logger.Notification($"PatternEditor: Loaded {listSlices.Count} slice(s). First slice, first row: {new string(Enumerable.Range(0, gridWidth).Select(x => listSlices[0][0, x]).ToArray())}");
         }
     }
 
     private void SetupDialog()
     {
-        ElementBounds dialogBounds = ElementStdBounds.AutosizedMainDialog
+        ElementBounds boundsDialog = ElementStdBounds.AutosizedMainDialog
             .WithAlignment(EnumDialogArea.CenterMiddle)
             .WithFixedAlignmentOffset(0, 0);
 
-        ElementBounds bgBounds = ElementBounds.Fill.WithFixedPadding(GuiStyle.ElementToDialogPadding);
-        bgBounds.BothSizing = ElementSizing.FitToChildren;
+        ElementBounds boundsBg = ElementBounds.Fill.WithFixedPadding(GuiStyle.ElementToDialogPadding);
+        boundsBg.BothSizing = ElementSizing.FitToChildren;
 
         double currentY = 30;
 
-        ElementBounds nameLabelBounds = ElementBounds.Fixed(0, currentY, 80, 25);
-        ElementBounds nameInputBounds = ElementBounds.Fixed(85, currentY, 300, 30);
+        ElementBounds boundsMetaNameLabel = ElementBounds.Fixed(0, currentY, 80, 25);
+        ElementBounds boundsMetaName = ElementBounds.Fixed(85, currentY, 300, 30);
         currentY += 40;
 
-        ElementBounds descLabelBounds = ElementBounds.Fixed(0, currentY, 80, 25);
-        ElementBounds descInputBounds = ElementBounds.Fixed(85, currentY, 300, 30);
+        ElementBounds boundsMetaDescLabel = ElementBounds.Fixed(0, currentY, 80, 25);
+        ElementBounds boundsMetaDesc = ElementBounds.Fixed(85, currentY, 300, 30);
         currentY += 40;
 
-        ElementBounds modeLabelBounds = ElementBounds.Fixed(0, currentY, 80, 25);
-        ElementBounds modeDropdownBounds = ElementBounds.Fixed(85, currentY, 150, 30);
+        ElementBounds boundsMetaModeLabel = ElementBounds.Fixed(0, currentY, 80, 25);
+        ElementBounds boundsMetaMode = ElementBounds.Fixed(85, currentY, 150, 30);
         currentY += 40;
 
-        ElementBounds widthLabelBounds = ElementBounds.Fixed(0, currentY, 80, 25);
-        ElementBounds widthInputBounds = ElementBounds.Fixed(85, currentY, 60, 30);
-        ElementBounds heightLabelBounds = ElementBounds.Fixed(155, currentY, 80, 25);
-        ElementBounds heightInputBounds = ElementBounds.Fixed(240, currentY, 60, 30);
-        ElementBounds resizeButtonBounds = ElementBounds.Fixed(310, currentY, 100, 30);
+        ElementBounds boundsMetaWidthLabel = ElementBounds.Fixed(0, currentY, 80, 25);
+        ElementBounds boundsMetaWidth = ElementBounds.Fixed(85, currentY, 60, 30);
+        ElementBounds boundsMetaHeightLabel = ElementBounds.Fixed(155, currentY, 80, 25);
+        ElementBounds boundsMetaHeight = ElementBounds.Fixed(240, currentY, 60, 30);
+        ElementBounds boundsMetaResize = ElementBounds.Fixed(310, currentY, 100, 30);
         currentY += 50;
 
-        ElementBounds prevSliceBounds = ElementBounds.Fixed(0, currentY, 100, 30);
-        ElementBounds sliceCounterBounds = ElementBounds.Fixed(110, currentY + 5, 240, 25);
-        ElementBounds nextSliceBounds = ElementBounds.Fixed(360, currentY, 100, 30);
+        ElementBounds boundsSlicePrev = ElementBounds.Fixed(0, currentY, 100, 30);
+        ElementBounds boundsSliceCounter = ElementBounds.Fixed(110, currentY + 5, 240, 25);
+        ElementBounds boundsSliceNext = ElementBounds.Fixed(360, currentY, 100, 30);
         currentY += 40;
 
-        ElementBounds addSliceBounds = ElementBounds.Fixed(0, currentY, 120, 30);
-        ElementBounds deleteSliceBounds = ElementBounds.Fixed(130, currentY, 120, 30);
-        ElementBounds copySliceBounds = ElementBounds.Fixed(260, currentY, 120, 30);
-        ElementBounds pasteSliceBounds = ElementBounds.Fixed(390, currentY, 120, 30);
+        ElementBounds boundsSliceAdd = ElementBounds.Fixed(0, currentY, 120, 30);
+        ElementBounds boundsSliceDelete = ElementBounds.Fixed(130, currentY, 120, 30);
+        ElementBounds boundsSliceCopy = ElementBounds.Fixed(260, currentY, 120, 30);
+        ElementBounds boundsSlicePaste = ElementBounds.Fixed(390, currentY, 120, 30);
         currentY += 40;
 
         double gridStartY = currentY;
-        ElementBounds gridContainerBounds = ElementBounds.Fixed(0, currentY, 450, 400);
-        ElementBounds blockPickerBounds = ElementBounds.Fixed(460, currentY, 250, 400);
-        ElementBounds blockPickerClipBounds = blockPickerBounds.ForkBoundingParent();
-        ElementBounds blockPickerInsetBounds = blockPickerBounds.FlatCopy().FixedGrow(6).WithFixedOffset(-3, -3);
-        ElementBounds blockPickerScrollbarBounds = blockPickerInsetBounds.CopyOffsetedSibling(blockPickerInsetBounds.fixedWidth + 7, 0, 0, 0).WithFixedWidth(20);
+        ElementBounds boundsGridContainer = ElementBounds.Fixed(0, currentY, 450, 400);
+        ElementBounds boundsPicker = ElementBounds.Fixed(460, currentY, 250, 400);
+        ElementBounds boundsPickerClip = boundsPicker.ForkBoundingParent();
+        ElementBounds boundsPickerInset = boundsPicker.FlatCopy().FixedGrow(6).WithFixedOffset(-3, -3);
+        ElementBounds boundsPickerScrollbar = boundsPickerInset.CopyOffsetedSibling(boundsPickerInset.fixedWidth + 7, 0, 0, 0).WithFixedWidth(20);
 
         currentY += 410;
 
-        ElementBounds saveButtonBounds = ElementBounds.Fixed(460, currentY, 120, 30);
-        ElementBounds cancelButtonBounds = ElementBounds.Fixed(590, currentY, 120, 30);
+        ElementBounds boundsSave = ElementBounds.Fixed(460, currentY, 120, 30);
+        ElementBounds boundsCancel = ElementBounds.Fixed(590, currentY, 120, 30);
 
         string[] modeValues = new string[] { "adaptive", "carve" };
         string[] modeNames = new string[] { "Adaptive", "Carve" };
 
-        var composer = capi.Gui.CreateCompo("patterneditor", dialogBounds)
-            .AddShadedDialogBG(bgBounds)
+        var composer = capi.Gui.CreateCompo("patterneditor", boundsDialog)
+            .AddShadedDialogBG(boundsBg)
             .AddDialogTitleBar($"Pattern Editor - Slot {targetSlot}", OnClose)
-            .BeginChildElements(bgBounds)
-                .AddStaticText("Name:", CairoFont.WhiteSmallText(), nameLabelBounds)
-                .AddTextInput(nameInputBounds, OnNameChanged, CairoFont.WhiteDetailText(), "name-input")
-                .AddStaticText("Description:", CairoFont.WhiteSmallText(), descLabelBounds)
-                .AddTextInput(descInputBounds, OnDescriptionChanged, CairoFont.WhiteDetailText(), "description-input")
-                .AddStaticText("Mode:", CairoFont.WhiteSmallText(), modeLabelBounds)
-                .AddDropDown(modeValues, modeNames, Array.IndexOf(modeValues, patternMode), OnModeChanged, modeDropdownBounds, "mode-dropdown")
-                .AddStaticText("Width:", CairoFont.WhiteSmallText(), widthLabelBounds)
-                .AddTextInput(widthInputBounds, OnWidthChanged, CairoFont.WhiteDetailText(), "width-input")
-                .AddStaticText("Height:", CairoFont.WhiteSmallText(), heightLabelBounds)
-                .AddTextInput(heightInputBounds, OnHeightChanged, CairoFont.WhiteDetailText(), "height-input")
-                .AddSmallButton("Resize Grid", OnResizeGrid, resizeButtonBounds)
-                .AddSmallButton("< Prev Slice", OnPreviousSlice, prevSliceBounds)
-                .AddStaticText($"Slice {currentSliceIndex + 1} of {slices.Count}", CairoFont.WhiteSmallText(), sliceCounterBounds, "slice-counter")
-                .AddSmallButton("Next Slice >", OnNextSlice, nextSliceBounds)
-                .AddSmallButton("Add Slice", OnAddSlice, addSliceBounds)
-                .AddSmallButton("Delete Slice", OnDeleteSlice, deleteSliceBounds)
-                .AddSmallButton("Copy Slice", OnCopySlice, copySliceBounds)
-                .AddSmallButton("Paste Slice", OnPasteSlice, pasteSliceBounds);
+            .BeginChildElements(boundsBg)
+                .AddStaticText("Name:", CairoFont.WhiteSmallText(), boundsMetaNameLabel)
+                .AddTextInput(boundsMetaName, OnNameChanged, CairoFont.WhiteDetailText(), "name-input")
+                .AddStaticText("Description:", CairoFont.WhiteSmallText(), boundsMetaDescLabel)
+                .AddTextInput(boundsMetaDesc, OnDescriptionChanged, CairoFont.WhiteDetailText(), "description-input")
+                .AddStaticText("Mode:", CairoFont.WhiteSmallText(), boundsMetaModeLabel)
+                .AddDropDown(modeValues, modeNames, Array.IndexOf(modeValues, patternMode), OnModeChanged, boundsMetaMode, "mode-dropdown")
+                .AddStaticText("Width:", CairoFont.WhiteSmallText(), boundsMetaWidthLabel)
+                .AddTextInput(boundsMetaWidth, OnWidthChanged, CairoFont.WhiteDetailText(), "width-input")
+                .AddStaticText("Height:", CairoFont.WhiteSmallText(), boundsMetaHeightLabel)
+                .AddTextInput(boundsMetaHeight, OnHeightChanged, CairoFont.WhiteDetailText(), "height-input")
+                .AddSmallButton("Resize Grid", OnResizeGrid, boundsMetaResize)
+                .AddSmallButton("< Prev Slice", OnPreviousSlice, boundsSlicePrev)
+                .AddStaticText($"Slice {indexSliceCurrent + 1} of {listSlices.Count}", CairoFont.WhiteSmallText(), boundsSliceCounter, "slice-counter")
+                .AddSmallButton("Next Slice >", OnNextSlice, boundsSliceNext)
+                .AddSmallButton("Add Slice", OnAddSlice, boundsSliceAdd)
+                .AddSmallButton("Delete Slice", OnDeleteSlice, boundsSliceDelete)
+                .AddSmallButton("Copy Slice", OnCopySlice, boundsSliceCopy)
+                .AddSmallButton("Paste Slice", OnPasteSlice, boundsSlicePaste);
 
         double cellSize = 28;
         double gridSpacing = 2;
         double totalGridWidth = gridWidth * (cellSize + gridSpacing);
         double totalGridHeight = gridHeight * (cellSize + gridSpacing);
 
-        var currentGrid = slices[currentSliceIndex];
+        var currentGrid = listSlices[indexSliceCurrent];
 
         for (int y = 0; y < gridHeight; y++)
         {
@@ -283,43 +283,43 @@ public class PatternEditorDialog : GuiDialog
                 double cellX = x * (cellSize + gridSpacing);
                 double cellY = gridStartY + ((gridHeight - 1 - y) * (cellSize + gridSpacing));
 
-                ElementBounds cellBounds = ElementBounds.Fixed(cellX, cellY, cellSize, cellSize);
+                ElementBounds boundsCell = ElementBounds.Fixed(cellX, cellY, cellSize, cellSize);
 
                 int capturedX = x;
                 int capturedY = y;
                 char cellChar = currentGrid[y, x];
                 string cellText = cellChar.ToString();
 
-                composer.AddButton(cellText, () => OnGridCellClicked(capturedX, capturedY), cellBounds, CairoFont.WhiteSmallText(), EnumButtonStyle.Small, $"grid-cell-{x}-{y}");
+                composer.AddButton(cellText, () => OnGridCellClicked(capturedX, capturedY), boundsCell, CairoFont.WhiteSmallText(), EnumButtonStyle.Small, $"grid-cell-{x}-{y}");
             }
         }
 
-        composer.AddInset(blockPickerInsetBounds, 3)
-                .BeginClip(blockPickerClipBounds);
+        composer.AddInset(boundsPickerInset, 3)
+                .BeginClip(boundsPickerClip);
 
         double blockPickerY = 0;
-        foreach (var (character, blockCode, displayName) in availableBlocks)
+        foreach (var (character, blockCode, displayName) in listBlocksAvailable)
         {
-            ElementBounds blockBounds = ElementBounds.Fixed(0, blockPickerY, 250, 25);
+            ElementBounds boundsBlock = ElementBounds.Fixed(0, blockPickerY, 250, 25);
             string buttonText = $"{character} - {displayName}";
             char capturedChar = character;
             string capturedCode = blockCode;
 
-            composer.AddButton(buttonText, () => OnBlockSelected(capturedChar, capturedCode), blockBounds, CairoFont.WhiteDetailText(), EnumButtonStyle.MainMenu, $"block-{character}");
+            composer.AddButton(buttonText, () => OnBlockSelected(capturedChar, capturedCode), boundsBlock, CairoFont.WhiteDetailText(), EnumButtonStyle.MainMenu, $"block-{character}");
             blockPickerY += 27;
         }
 
         composer.EndClip()
-            .AddVerticalScrollbar(OnBlockPickerScroll, blockPickerScrollbarBounds, "block-picker-scrollbar")
-            .AddSmallButton("Save Pattern", OnSavePattern, saveButtonBounds)
-            .AddSmallButton("Cancel", OnCloseButton, cancelButtonBounds)
+            .AddVerticalScrollbar(OnBlockPickerScroll, boundsPickerScrollbar, "block-picker-scrollbar")
+            .AddSmallButton("Save Pattern", OnSavePattern, boundsSave)
+            .AddSmallButton("Cancel", OnCloseButton, boundsCancel)
             .EndChildElements()
             .Compose();
 
         SingleComposer = composer;
 
         SingleComposer.GetScrollbar("block-picker-scrollbar").SetHeights(
-            (float)blockPickerBounds.fixedHeight,
+            (float)boundsPicker.fixedHeight,
             (float)blockPickerY
         );
 
@@ -378,10 +378,10 @@ public class PatternEditorDialog : GuiDialog
 
     private bool OnPreviousSlice()
     {
-        if (currentSliceIndex > 0)
+        if (indexSliceCurrent > 0)
         {
-            currentSliceIndex--;
-            capi.Logger.Notification($"PatternEditor: Navigated to slice {currentSliceIndex}");
+            indexSliceCurrent--;
+            capi.Logger.Notification($"PatternEditor: Navigated to slice {indexSliceCurrent}");
             RefreshGrid();
         }
         else
@@ -393,10 +393,10 @@ public class PatternEditorDialog : GuiDialog
 
     private bool OnNextSlice()
     {
-        if (currentSliceIndex < slices.Count - 1)
+        if (indexSliceCurrent < listSlices.Count - 1)
         {
-            currentSliceIndex++;
-            capi.Logger.Notification($"PatternEditor: Navigated to slice {currentSliceIndex}");
+            indexSliceCurrent++;
+            capi.Logger.Notification($"PatternEditor: Navigated to slice {indexSliceCurrent}");
             RefreshGrid();
         }
         else
@@ -408,7 +408,7 @@ public class PatternEditorDialog : GuiDialog
 
     private bool OnAddSlice()
     {
-        var currentGrid = slices[currentSliceIndex];
+        var currentGrid = listSlices[indexSliceCurrent];
         var newGrid = new char[gridHeight, gridWidth];
 
         for (int y = 0; y < gridHeight; y++)
@@ -419,65 +419,65 @@ public class PatternEditorDialog : GuiDialog
             }
         }
 
-        slices.Insert(currentSliceIndex + 1, newGrid);
-        currentSliceIndex++;
+        listSlices.Insert(indexSliceCurrent + 1, newGrid);
+        indexSliceCurrent++;
 
-        capi.Logger.Notification($"PatternEditor: Added new slice at index {currentSliceIndex}. Total slices: {slices.Count}");
-        capi.ShowChatMessage($"Added slice {currentSliceIndex + 1} (copy of previous slice)");
+        capi.Logger.Notification($"PatternEditor: Added new slice at index {indexSliceCurrent}. Total listSlices: {listSlices.Count}");
+        capi.ShowChatMessage($"Added slice {indexSliceCurrent + 1} (copy of previous slice)");
         RefreshGrid();
         return true;
     }
 
     private bool OnDeleteSlice()
     {
-        if (slices.Count <= 1)
+        if (listSlices.Count <= 1)
         {
             capi.ShowChatMessage("Cannot delete the last remaining slice");
             return true;
         }
 
-        int deletedIndex = currentSliceIndex;
-        slices.RemoveAt(currentSliceIndex);
+        int deletedIndex = indexSliceCurrent;
+        listSlices.RemoveAt(indexSliceCurrent);
 
-        if (currentSliceIndex >= slices.Count)
+        if (indexSliceCurrent >= listSlices.Count)
         {
-            currentSliceIndex = slices.Count - 1;
+            indexSliceCurrent = listSlices.Count - 1;
         }
 
-        capi.Logger.Notification($"PatternEditor: Deleted slice at index {deletedIndex}. Total slices: {slices.Count}. Now at slice {currentSliceIndex}");
-        capi.ShowChatMessage($"Deleted slice {deletedIndex + 1}. Now at slice {currentSliceIndex + 1}");
+        capi.Logger.Notification($"PatternEditor: Deleted slice at index {deletedIndex}. Total listSlices: {listSlices.Count}. Now at slice {indexSliceCurrent}");
+        capi.ShowChatMessage($"Deleted slice {deletedIndex + 1}. Now at slice {indexSliceCurrent + 1}");
         RefreshGrid();
         return true;
     }
 
     private bool OnCopySlice()
     {
-        var currentGrid = slices[currentSliceIndex];
-        clipboardSlice = new char[gridHeight, gridWidth];
+        var currentGrid = listSlices[indexSliceCurrent];
+        sliceClipboard = new char[gridHeight, gridWidth];
 
         for (int y = 0; y < gridHeight; y++)
         {
             for (int x = 0; x < gridWidth; x++)
             {
-                clipboardSlice[y, x] = currentGrid[y, x];
+                sliceClipboard[y, x] = currentGrid[y, x];
             }
         }
 
-        capi.Logger.Notification($"PatternEditor: Copied slice {currentSliceIndex} to clipboard (dimensions: {gridWidth}x{gridHeight})");
-        capi.ShowChatMessage($"Copied slice {currentSliceIndex + 1} to clipboard");
+        capi.Logger.Notification($"PatternEditor: Copied slice {indexSliceCurrent} to clipboard (dimensions: {gridWidth}x{gridHeight})");
+        capi.ShowChatMessage($"Copied slice {indexSliceCurrent + 1} to clipboard");
         return true;
     }
 
     private bool OnPasteSlice()
     {
-        if (clipboardSlice == null)
+        if (sliceClipboard == null)
         {
             capi.ShowChatMessage("Clipboard is empty. Copy a slice first.");
             return true;
         }
 
-        int clipboardWidth = clipboardSlice.GetLength(1);
-        int clipboardHeight = clipboardSlice.GetLength(0);
+        int clipboardWidth = sliceClipboard.GetLength(1);
+        int clipboardHeight = sliceClipboard.GetLength(0);
 
         if (clipboardWidth != gridWidth || clipboardHeight != gridHeight)
         {
@@ -485,38 +485,38 @@ public class PatternEditorDialog : GuiDialog
             return true;
         }
 
-        var currentGrid = slices[currentSliceIndex];
+        var currentGrid = listSlices[indexSliceCurrent];
         for (int y = 0; y < gridHeight; y++)
         {
             for (int x = 0; x < gridWidth; x++)
             {
-                currentGrid[y, x] = clipboardSlice[y, x];
+                currentGrid[y, x] = sliceClipboard[y, x];
             }
         }
 
-        capi.Logger.Notification($"PatternEditor: Pasted clipboard to slice {currentSliceIndex}");
-        capi.ShowChatMessage($"Pasted clipboard to slice {currentSliceIndex + 1}");
+        capi.Logger.Notification($"PatternEditor: Pasted clipboard to slice {indexSliceCurrent}");
+        capi.ShowChatMessage($"Pasted clipboard to slice {indexSliceCurrent + 1}");
         RefreshGrid();
         return true;
     }
 
     private bool OnBlockSelected(char character, string blockCode)
     {
-        selectedBlockChar = character;
-        selectedBlockCode = blockCode;
+        charBlockSelected = character;
+        codeBlockSelected = blockCode;
         capi.ShowChatMessage($"Selected: {character} - {blockCode}");
         return true;
     }
 
     private bool OnGridCellClicked(int x, int y)
     {
-        capi.Logger.Notification($"Grid cell clicked: ({x}, {y}), painting '{selectedBlockChar}' on slice {currentSliceIndex}");
+        capi.Logger.Notification($"Grid cell clicked: ({x}, {y}), painting '{charBlockSelected}' on slice {indexSliceCurrent}");
 
-        slices[currentSliceIndex][y, x] = selectedBlockChar;
+        listSlices[indexSliceCurrent][y, x] = charBlockSelected;
 
-        if (!blockMappings.ContainsKey(selectedBlockChar) && selectedBlockChar != '_')
+        if (!mapBlocks.ContainsKey(charBlockSelected) && charBlockSelected != '_')
         {
-            blockMappings[selectedBlockChar] = selectedBlockCode;
+            mapBlocks[charBlockSelected] = codeBlockSelected;
         }
 
         RefreshGrid();
@@ -536,12 +536,12 @@ public class PatternEditorDialog : GuiDialog
         var composer = SingleComposer;
         if (composer == null) return;
 
-        foreach (var (character, _, _) in availableBlocks)
+        foreach (var (character, _, _) in listBlocksAvailable)
         {
             var button = composer.GetButton($"block-{character}");
             if (button != null)
             {
-                double originalY = availableBlocks.FindIndex(b => b.character == character) * 27;
+                double originalY = listBlocksAvailable.FindIndex(b => b.character == character) * 27;
                 button.Bounds.fixedY = originalY - value;
                 button.Bounds.CalcWorldBounds();
             }
@@ -566,7 +566,7 @@ public class PatternEditorDialog : GuiDialog
         }
 
         bool hasPlayerMarker = false;
-        var currentGrid = slices[currentSliceIndex];
+        var currentGrid = listSlices[indexSliceCurrent];
         for (int y = 0; y < gridHeight; y++)
         {
             for (int x = 0; x < gridWidth; x++)
@@ -589,7 +589,7 @@ public class PatternEditorDialog : GuiDialog
         capi.Logger.Notification($"PatternEditor: Built {sliceStrings.Length} slice string(s)");
 
         var usedChars = new HashSet<char>();
-        foreach (var grid in slices)
+        foreach (var grid in listSlices)
         {
             for (int y = 0; y < gridHeight; y++)
             {
@@ -607,9 +607,9 @@ public class PatternEditorDialog : GuiDialog
         var cleanedBlocks = new Dictionary<char, string>();
         foreach (char c in usedChars)
         {
-            if (blockMappings.ContainsKey(c))
+            if (mapBlocks.ContainsKey(c))
             {
-                string blockCode = blockMappings[c];
+                string blockCode = mapBlocks[c];
                 if (blockCode != "air")
                 {
                     cleanedBlocks[c] = blockCode;
@@ -692,7 +692,7 @@ public class PatternEditorDialog : GuiDialog
     {
         var sliceStrings = new List<string>();
 
-        foreach (var grid in slices)
+        foreach (var grid in listSlices)
         {
             var rows = new List<string>();
 

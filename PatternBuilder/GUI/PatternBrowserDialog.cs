@@ -37,40 +37,40 @@ public class PatternBrowserDialog : GuiDialog
     {
         buttonOriginalY.Clear();
 
-        ElementBounds dialogBounds = ElementStdBounds.AutosizedMainDialog
+        ElementBounds boundsDialog = ElementStdBounds.AutosizedMainDialog
             .WithAlignment(EnumDialogArea.CenterMiddle)
             .WithFixedAlignmentOffset(0, 0);
 
-        ElementBounds bgBounds = ElementBounds.Fill.WithFixedPadding(GuiStyle.ElementToDialogPadding);
-        bgBounds.BothSizing = ElementSizing.FitToChildren;
+        ElementBounds boundsBg = ElementBounds.Fill.WithFixedPadding(GuiStyle.ElementToDialogPadding);
+        boundsBg.BothSizing = ElementSizing.FitToChildren;
 
-        ElementBounds searchLabelBounds = ElementBounds.Fixed(0, 35, 60, 25);
-        ElementBounds searchInputBounds = ElementBounds.Fixed(65, 30, 415, 30);
-        ElementBounds scrollBounds = ElementBounds.Fixed(0, 70, 480, 240);
-        ElementBounds clipBounds = scrollBounds.ForkBoundingParent();
-        ElementBounds insetBounds = scrollBounds.FlatCopy().FixedGrow(6).WithFixedOffset(-3, -3);
+        ElementBounds boundsSearchLabel = ElementBounds.Fixed(0, 35, 60, 25);
+        ElementBounds boundsSearchInput = ElementBounds.Fixed(65, 30, 415, 30);
+        ElementBounds boundsScroll = ElementBounds.Fixed(0, 70, 480, 240);
+        ElementBounds boundsClip = boundsScroll.ForkBoundingParent();
+        ElementBounds boundsInset = boundsScroll.FlatCopy().FixedGrow(6).WithFixedOffset(-3, -3);
 
-        ElementBounds infoPanelBounds = ElementBounds.Fixed(0, 320, 460, 160);
-        ElementBounds infoClipBounds = infoPanelBounds.ForkBoundingParent();
-        ElementBounds infoInsetBounds = infoPanelBounds.FlatCopy().FixedGrow(6).WithFixedOffset(-3, -3);
+        ElementBounds boundsInfoPanel = ElementBounds.Fixed(0, 320, 460, 160);
+        ElementBounds boundsInfoClip = boundsInfoPanel.ForkBoundingParent();
+        ElementBounds boundsInfoInset = boundsInfoPanel.FlatCopy().FixedGrow(6).WithFixedOffset(-3, -3);
 
-        ElementBounds selectButtonBounds = ElementBounds.Fixed(210, 490, 200, 30);
-        ElementBounds reloadButtonBounds = ElementBounds.Fixed(0, 490, 200, 30);
+        ElementBounds boundsSelect = ElementBounds.Fixed(210, 490, 200, 30);
+        ElementBounds boundsReload = ElementBounds.Fixed(0, 490, 200, 30);
 
-        ElementBounds scrollbarBounds = insetBounds.CopyOffsetedSibling(insetBounds.fixedWidth + 7, 0, 0, 0)
+        ElementBounds boundsScrollbar = boundsInset.CopyOffsetedSibling(boundsInset.fixedWidth + 7, 0, 0, 0)
             .WithFixedWidth(20);
 
-        ElementBounds infoScrollbarBounds = infoInsetBounds.CopyOffsetedSibling(infoInsetBounds.fixedWidth + 7, 0, 0, 0)
+        ElementBounds boundsInfoScrollbar = boundsInfoInset.CopyOffsetedSibling(boundsInfoInset.fixedWidth + 7, 0, 0, 0)
             .WithFixedWidth(20);
 
-        var composer = capi.Gui.CreateCompo("patternbrowser", dialogBounds)
-            .AddShadedDialogBG(bgBounds)
+        var composer = capi.Gui.CreateCompo("patternbrowser", boundsDialog)
+            .AddShadedDialogBG(boundsBg)
             .AddDialogTitleBar("Pattern Browser", OnClose)
-            .BeginChildElements(bgBounds)
-                .AddStaticText("Search:", CairoFont.WhiteSmallText(), searchLabelBounds)
-                .AddTextInput(searchInputBounds, OnSearchChanged, CairoFont.WhiteDetailText(), "search-input")
-                .AddInset(insetBounds, 3)
-                .BeginClip(clipBounds);
+            .BeginChildElements(boundsBg)
+                .AddStaticText("Search:", CairoFont.WhiteSmallText(), boundsSearchLabel)
+                .AddTextInput(boundsSearchInput, OnSearchChanged, CairoFont.WhiteDetailText(), "search-input")
+                .AddInset(boundsInset, 3)
+                .BeginClip(boundsClip);
 
         int currentSlot = patternManager.GetCurrentSlot();
         double currentY = 0;
@@ -111,7 +111,7 @@ public class PatternBrowserDialog : GuiDialog
                 continue;
             }
 
-            ElementBounds rowBounds = ElementBounds.Fixed(0, currentY, 480, 25);
+            ElementBounds boundsRow = ElementBounds.Fixed(0, currentY, 480, 25);
 
             string prefix = isCurrent ? "> " : "  ";
             string displayText = $"{prefix}{validationIcon} {slotText}: {patternInfo}";
@@ -123,27 +123,27 @@ public class PatternBrowserDialog : GuiDialog
             int capturedSlot = slot;
 
             buttonOriginalY[slot] = currentY;
-            composer.AddButton(displayText, () => OnPatternRowClicked(capturedSlot), rowBounds, font, EnumButtonStyle.MainMenu, $"btn-slot-{slot}");
+            composer.AddButton(displayText, () => OnPatternRowClicked(capturedSlot), boundsRow, font, EnumButtonStyle.MainMenu, $"btn-slot-{slot}");
 
             currentY += 27;
         }
 
         composer.EndClip()
-            .AddVerticalScrollbar(OnScroll, scrollbarBounds, "scrollbar")
-            .AddInset(infoInsetBounds, 3)
-            .BeginClip(infoClipBounds)
-            .AddDynamicText("", CairoFont.WhiteSmallText(), infoPanelBounds.FlatCopy().WithFixedPadding(5), "info-text")
+            .AddVerticalScrollbar(OnScroll, boundsScrollbar, "scrollbar")
+            .AddInset(boundsInfoInset, 3)
+            .BeginClip(boundsInfoClip)
+            .AddDynamicText("", CairoFont.WhiteSmallText(), boundsInfoPanel.FlatCopy().WithFixedPadding(5), "info-text")
             .EndClip()
-            .AddVerticalScrollbar(OnInfoScroll, infoScrollbarBounds, "info-scrollbar")
-            .AddSmallButton("Reload Patterns", OnReloadPatterns, reloadButtonBounds)
-            .AddSmallButton("Select Pattern", OnSelectPattern, selectButtonBounds)
+            .AddVerticalScrollbar(OnInfoScroll, boundsInfoScrollbar, "info-scrollbar")
+            .AddSmallButton("Reload Patterns", OnReloadPatterns, boundsReload)
+            .AddSmallButton("Select Pattern", OnSelectPattern, boundsSelect)
             .EndChildElements()
             .Compose();
 
         SingleComposer = composer;
 
         SingleComposer.GetScrollbar("scrollbar").SetHeights(
-            (float)scrollBounds.fixedHeight,
+            (float)boundsScroll.fixedHeight,
             (float)(currentY)
         );
 

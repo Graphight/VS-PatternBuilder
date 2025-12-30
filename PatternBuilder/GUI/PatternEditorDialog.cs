@@ -24,6 +24,7 @@ public class PatternEditorDialog : GuiDialog
 
     private List<char[,]> slices;
     private int currentSliceIndex = 0;
+    private char[,] clipboardSlice = null;
     private char selectedBlockChar = 'B';
     private string selectedBlockCode = "game:cobblestone-granite";
 
@@ -226,6 +227,8 @@ public class PatternEditorDialog : GuiDialog
 
         ElementBounds addSliceBounds = ElementBounds.Fixed(0, currentY, 120, 30);
         ElementBounds deleteSliceBounds = ElementBounds.Fixed(130, currentY, 120, 30);
+        ElementBounds copySliceBounds = ElementBounds.Fixed(260, currentY, 120, 30);
+        ElementBounds pasteSliceBounds = ElementBounds.Fixed(390, currentY, 120, 30);
         currentY += 40;
 
         double gridStartY = currentY;
@@ -262,7 +265,9 @@ public class PatternEditorDialog : GuiDialog
                 .AddStaticText($"Slice {currentSliceIndex + 1} of {slices.Count}", CairoFont.WhiteSmallText(), sliceCounterBounds, "slice-counter")
                 .AddSmallButton("Next Slice >", OnNextSlice, nextSliceBounds)
                 .AddSmallButton("Add Slice", OnAddSlice, addSliceBounds)
-                .AddSmallButton("Delete Slice", OnDeleteSlice, deleteSliceBounds);
+                .AddSmallButton("Delete Slice", OnDeleteSlice, deleteSliceBounds)
+                .AddSmallButton("Copy Slice", OnCopySlice, copySliceBounds)
+                .AddSmallButton("Paste Slice", OnPasteSlice, pasteSliceBounds);
 
         double cellSize = 28;
         double gridSpacing = 2;
@@ -441,6 +446,56 @@ public class PatternEditorDialog : GuiDialog
 
         capi.Logger.Notification($"PatternEditor: Deleted slice at index {deletedIndex}. Total slices: {slices.Count}. Now at slice {currentSliceIndex}");
         capi.ShowChatMessage($"Deleted slice {deletedIndex + 1}. Now at slice {currentSliceIndex + 1}");
+        RefreshGrid();
+        return true;
+    }
+
+    private bool OnCopySlice()
+    {
+        var currentGrid = slices[currentSliceIndex];
+        clipboardSlice = new char[gridHeight, gridWidth];
+
+        for (int y = 0; y < gridHeight; y++)
+        {
+            for (int x = 0; x < gridWidth; x++)
+            {
+                clipboardSlice[y, x] = currentGrid[y, x];
+            }
+        }
+
+        capi.Logger.Notification($"PatternEditor: Copied slice {currentSliceIndex} to clipboard (dimensions: {gridWidth}x{gridHeight})");
+        capi.ShowChatMessage($"Copied slice {currentSliceIndex + 1} to clipboard");
+        return true;
+    }
+
+    private bool OnPasteSlice()
+    {
+        if (clipboardSlice == null)
+        {
+            capi.ShowChatMessage("Clipboard is empty. Copy a slice first.");
+            return true;
+        }
+
+        int clipboardWidth = clipboardSlice.GetLength(1);
+        int clipboardHeight = clipboardSlice.GetLength(0);
+
+        if (clipboardWidth != gridWidth || clipboardHeight != gridHeight)
+        {
+            capi.ShowChatMessage($"Cannot paste: clipboard dimensions ({clipboardWidth}x{clipboardHeight}) don't match current grid ({gridWidth}x{gridHeight})");
+            return true;
+        }
+
+        var currentGrid = slices[currentSliceIndex];
+        for (int y = 0; y < gridHeight; y++)
+        {
+            for (int x = 0; x < gridWidth; x++)
+            {
+                currentGrid[y, x] = clipboardSlice[y, x];
+            }
+        }
+
+        capi.Logger.Notification($"PatternEditor: Pasted clipboard to slice {currentSliceIndex}");
+        capi.ShowChatMessage($"Pasted clipboard to slice {currentSliceIndex + 1}");
         RefreshGrid();
         return true;
     }

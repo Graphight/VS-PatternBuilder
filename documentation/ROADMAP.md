@@ -2,24 +2,23 @@
 
 ## In Progress
 
-### GUI Features (Sessions 1-2 Complete, Sessions 3-5 Planned)
-**Status**: Pattern browser complete, editor planned
+### GUI Features (Sessions 1-3 Complete, Sessions 4-5 Planned)
+**Status**: Pattern browser and 2D editor complete
 **Branch**: feature/gui-pattern-editor
-**Documentation**: See `.claude/gui_feature_plan.md` and `.claude/session_notes/2025-12-29_GUI_Session_1_and_2_Notes.md`
+**Documentation**: See `.claude/gui_feature_plan.md` and `.claude/session_notes/`
 
-**Completed** (Sessions 1-2):
-- Pattern browser dialog with search/filter
-- Validation indicators per pattern
-- Info panel with block counts
-- Two-step pattern selection (preview then commit)
-- Reload patterns button
-- Hotkey: Ctrl+Shift+Space
-- Functional scrollbars for pattern list and info panel
+**Completed** (Sessions 1-3):
+- **Session 1-2**: Pattern browser dialog with search/filter, validation indicators, info panel, scrollbars
+  - Hotkey: Ctrl+Shift+Space
+  - Command: `.pb browser`
+- **Session 3**: 2D pattern editor with grid painting, block picker, save/load
+  - Command: `.pb edit [slot]`
+  - Features: Metadata inputs, 16 common blocks, resize grid, pattern validation
+  - Saves to JSON, loads existing patterns
 
-**Planned** (Sessions 3-5):
-- Session 3: 2D grid editor for pattern creation
+**Planned** (Sessions 4-5):
 - Session 4: 3D slice navigation and management
-- Session 5: Search, import/export, undo/redo
+- Session 5: Enhanced block picker, search, import/export, undo/redo
 
 ---
 
@@ -79,6 +78,8 @@
 - Validation is skipped for blocks with wildcards ('*') which means players can put garbage in there
 - No validation that TransitionUpLayer/TransitionDownLayer exist when terrain following is enabled
 - Sprinting down slopes will skip some transition layer placements (I spent way too long trying to fix this so gave up)
+- **Asymmetric pattern orientation**: Patterns don't rotate with player direction - "ABC" always places "A" north, "C" south regardless of which way player faces
+- **Preview orientation bug**: Preview renderer doesn't respect player direction, always faces north (especially noticeable with tunnels)
 
 ## Fixed
 - ~~When sprinting some placements are missed~~ - Fixed with 100ms tick rate and 0.6 block threshold

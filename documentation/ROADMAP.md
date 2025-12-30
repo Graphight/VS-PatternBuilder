@@ -53,6 +53,9 @@
     - Search/filter within categories
     - Support for all blocks including modded content
     - Reference: VS creative mode inventory system
+    - Support our directional block feature
+      - Edit a specific block in the pattern to have suffixes `|l|auto` etc
+      - These will need a different character in the JSON block definition
     - **Complexity**: Medium - texture rendering, category organization
 
 ### Tier 4: Polish & Community Features

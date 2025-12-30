@@ -23,7 +23,7 @@ public class PatternEditorDialog : GuiDialog
     private int gridHeight = 5;
 
     private char[,] grid;
-    private char selectedBlockChar = 'A';
+    private char selectedBlockChar = 'B';
     private string selectedBlockCode = "game:cobblestone-granite";
 
     private Dictionary<char, string> blockMappings;
@@ -76,7 +76,7 @@ public class PatternEditorDialog : GuiDialog
     {
         availableBlocks = new List<(char, string, string)>
         {
-            ('A', "air", "Air"),
+            ('_', "air", "Air (Empty)"),
             ('B', "game:cobblestone-granite", "Cobblestone"),
             ('C', "game:stonebricks-granite", "Stone Bricks"),
             ('D', "game:soil-medium-normal", "Soil"),
@@ -86,11 +86,11 @@ public class PatternEditorDialog : GuiDialog
             ('H', "game:claybricks-fire", "Clay Bricks"),
             ('I', "game:glass-plain", "Glass"),
             ('J', "game:sand-granite", "Sand"),
-            ('K', "game:stonepath", "Stone Path"),
-            ('L', "game:torch-basic-lit-up", "Torch"),
+            ('K', "game:stonebrickstairs-granite-north|up|f", "Stone Stairs"),
+            ('L', "game:torch-ground-lit-north", "Torch"),
             ('M', "game:lantern-iron-on", "Lantern"),
             ('N', "game:woodenfence-oak-empty-free", "Fence"),
-            ('O', "game:door-wood-oak-left-closed-n", "Door"),
+            ('O', "game:paperlantern-on", "Paper Lantern"),
             ('P', "player", "Player"),
         };
 
@@ -109,7 +109,7 @@ public class PatternEditorDialog : GuiDialog
         {
             for (int x = 0; x < gridWidth; x++)
             {
-                grid[y, x] = 'A';
+                grid[y, x] = '_';
             }
         }
 
@@ -124,36 +124,38 @@ public class PatternEditorDialog : GuiDialog
         grid = new char[gridHeight, gridWidth];
         blockMappings = new Dictionary<char, string>(pattern.Blocks);
 
-        if (pattern.ParsePattern(0))
-        {
-            for (int y = 0; y < gridHeight && y < pattern.Height; y++)
-            {
-                for (int x = 0; x < gridWidth && x < pattern.Width; x++)
-                {
-                    string blockCode = pattern.GetBlockAt(x, y);
+        capi.Logger.Notification($"PatternEditor: Loading pattern into grid. Width={gridWidth}, Height={gridHeight}");
+        capi.Logger.Notification($"PatternEditor: Pattern slice: {pattern.Slices[0]}");
+        capi.Logger.Notification($"PatternEditor: Pattern blocks: {string.Join(", ", pattern.Blocks.Select(kvp => $"{kvp.Key}={kvp.Value}"))}");
 
-                    if (blockCode == "air" || blockCode == null)
+        string[] layers = pattern.Slices[0].Split(',');
+        if (layers.Length == gridHeight)
+        {
+            for (int y = 0; y < gridHeight; y++)
+            {
+                string layer = layers[y];
+                if (layer.Length == gridWidth)
+                {
+                    for (int x = 0; x < gridWidth; x++)
                     {
-                        grid[y, x] = '_';
+                        grid[y, x] = layer[x];
                     }
-                    else
+                }
+                else
+                {
+                    capi.Logger.Warning($"PatternEditor: Layer {y} width mismatch: expected {gridWidth}, got {layer.Length}");
+                    for (int x = 0; x < gridWidth && x < layer.Length; x++)
                     {
-                        char foundChar = '_';
-                        foreach (var kvp in pattern.Blocks)
-                        {
-                            if (kvp.Value == blockCode)
-                            {
-                                foundChar = kvp.Key;
-                                break;
-                            }
-                        }
-                        grid[y, x] = foundChar;
+                        grid[y, x] = layer[x];
                     }
                 }
             }
+
+            capi.Logger.Notification($"PatternEditor: Grid loaded. First row: {new string(Enumerable.Range(0, gridWidth).Select(x => grid[0, x]).ToArray())}");
         }
         else
         {
+            capi.Logger.Warning($"PatternEditor: Pattern height mismatch: expected {gridHeight}, got {layers.Length}. Initializing empty grid.");
             InitializeEmptyGrid();
         }
     }
@@ -185,8 +187,10 @@ public class PatternEditorDialog : GuiDialog
         ElementBounds widthInputBounds = ElementBounds.Fixed(85, currentY, 60, 30);
         ElementBounds heightLabelBounds = ElementBounds.Fixed(155, currentY, 80, 25);
         ElementBounds heightInputBounds = ElementBounds.Fixed(240, currentY, 60, 30);
+        ElementBounds resizeButtonBounds = ElementBounds.Fixed(310, currentY, 100, 30);
         currentY += 50;
 
+        double gridStartY = currentY;
         ElementBounds gridContainerBounds = ElementBounds.Fixed(0, currentY, 450, 400);
         ElementBounds blockPickerBounds = ElementBounds.Fixed(460, currentY, 250, 400);
         ElementBounds blockPickerClipBounds = blockPickerBounds.ForkBoundingParent();
@@ -215,8 +219,32 @@ public class PatternEditorDialog : GuiDialog
                 .AddTextInput(widthInputBounds, OnWidthChanged, CairoFont.WhiteDetailText(), "width-input")
                 .AddStaticText("Height:", CairoFont.WhiteSmallText(), heightLabelBounds)
                 .AddTextInput(heightInputBounds, OnHeightChanged, CairoFont.WhiteDetailText(), "height-input")
-                .AddStaticText("Grid Editor - Coming Soon", CairoFont.WhiteSmallText(), gridContainerBounds)
-                .AddInset(blockPickerInsetBounds, 3)
+                .AddSmallButton("Resize Grid", OnResizeGrid, resizeButtonBounds);
+
+        double cellSize = 28;
+        double gridSpacing = 2;
+        double totalGridWidth = gridWidth * (cellSize + gridSpacing);
+        double totalGridHeight = gridHeight * (cellSize + gridSpacing);
+
+        for (int y = 0; y < gridHeight; y++)
+        {
+            for (int x = 0; x < gridWidth; x++)
+            {
+                double cellX = x * (cellSize + gridSpacing);
+                double cellY = gridStartY + ((gridHeight - 1 - y) * (cellSize + gridSpacing));
+
+                ElementBounds cellBounds = ElementBounds.Fixed(cellX, cellY, cellSize, cellSize);
+
+                int capturedX = x;
+                int capturedY = y;
+                char cellChar = grid[y, x];
+                string cellText = cellChar.ToString();
+
+                composer.AddButton(cellText, () => OnGridCellClicked(capturedX, capturedY), cellBounds, CairoFont.WhiteSmallText(), EnumButtonStyle.Small, $"grid-cell-{x}-{y}");
+            }
+        }
+
+        composer.AddInset(blockPickerInsetBounds, 3)
                 .BeginClip(blockPickerClipBounds);
 
         double blockPickerY = 0;
@@ -274,7 +302,6 @@ public class PatternEditorDialog : GuiDialog
         if (int.TryParse(value, out int width) && width > 0 && width <= 15)
         {
             gridWidth = width;
-            InitializeEmptyGrid();
         }
     }
 
@@ -283,8 +310,20 @@ public class PatternEditorDialog : GuiDialog
         if (int.TryParse(value, out int height) && height > 0 && height <= 15)
         {
             gridHeight = height;
-            InitializeEmptyGrid();
         }
+    }
+
+    private bool OnResizeGrid()
+    {
+        if (gridWidth < 1 || gridWidth > 15 || gridHeight < 1 || gridHeight > 15)
+        {
+            capi.ShowChatMessage($"Grid dimensions must be between 1x1 and 15x15");
+            return true;
+        }
+
+        InitializeEmptyGrid();
+        RefreshGrid();
+        return true;
     }
 
     private bool OnBlockSelected(char character, string blockCode)
@@ -293,6 +332,29 @@ public class PatternEditorDialog : GuiDialog
         selectedBlockCode = blockCode;
         capi.ShowChatMessage($"Selected: {character} - {blockCode}");
         return true;
+    }
+
+    private bool OnGridCellClicked(int x, int y)
+    {
+        capi.Logger.Notification($"Grid cell clicked: ({x}, {y}), painting '{selectedBlockChar}'");
+
+        grid[y, x] = selectedBlockChar;
+
+        if (!blockMappings.ContainsKey(selectedBlockChar) && selectedBlockChar != '_')
+        {
+            blockMappings[selectedBlockChar] = selectedBlockCode;
+        }
+
+        RefreshGrid();
+
+        return true;
+    }
+
+    private void RefreshGrid()
+    {
+        capi.Event.EnqueueMainThreadTask(() => {
+            SetupDialog();
+        }, "pattern-editor-refresh");
     }
 
     private void OnBlockPickerScroll(float value)
@@ -314,8 +376,162 @@ public class PatternEditorDialog : GuiDialog
 
     private bool OnSavePattern()
     {
-        capi.ShowChatMessage("Save functionality - Coming Soon");
+        capi.Logger.Notification("PatternEditor: OnSavePattern called");
+        capi.ShowChatMessage("Save button clicked - starting validation...");
+
+        if (string.IsNullOrWhiteSpace(patternName))
+        {
+            capi.ShowChatMessage("Pattern name cannot be empty");
+            return true;
+        }
+
+        if (gridWidth < 1 || gridHeight < 1)
+        {
+            capi.ShowChatMessage("Grid dimensions must be at least 1x1");
+            return true;
+        }
+
+        bool hasPlayerMarker = false;
+        for (int y = 0; y < gridHeight; y++)
+        {
+            for (int x = 0; x < gridWidth; x++)
+            {
+                if (grid[y, x] == 'P')
+                {
+                    hasPlayerMarker = true;
+                    break;
+                }
+            }
+        }
+
+        if (!hasPlayerMarker)
+        {
+            capi.ShowChatMessage("Pattern must have a 'P' (player) marker. Select 'P' from block picker and place it in the grid.");
+            return true;
+        }
+
+        string sliceString = BuildSliceString();
+        capi.Logger.Notification($"PatternEditor: Built slice string: {sliceString}");
+
+        var usedChars = new HashSet<char>();
+        for (int y = 0; y < gridHeight; y++)
+        {
+            for (int x = 0; x < gridWidth; x++)
+            {
+                char c = grid[y, x];
+                if (c != '_')
+                {
+                    usedChars.Add(c);
+                }
+            }
+        }
+
+        var cleanedBlocks = new Dictionary<char, string>();
+        foreach (char c in usedChars)
+        {
+            if (blockMappings.ContainsKey(c))
+            {
+                string blockCode = blockMappings[c];
+                if (blockCode != "air")
+                {
+                    cleanedBlocks[c] = blockCode;
+                }
+            }
+        }
+        capi.Logger.Notification($"PatternEditor: Used chars: {string.Join(", ", usedChars)}");
+        capi.Logger.Notification($"PatternEditor: Cleaned blocks: {string.Join(", ", cleanedBlocks.Select(kvp => $"{kvp.Key}={kvp.Value}"))}");
+
+        var pattern = new PatternDefinition
+        {
+            Name = patternName,
+            Description = string.IsNullOrWhiteSpace(patternDescription) ? null : patternDescription,
+            Slices = new string[] { sliceString },
+            Width = gridWidth,
+            Height = gridHeight,
+            Mode = patternMode,
+            Blocks = cleanedBlocks
+        };
+
+        capi.Logger.Notification("PatternEditor: Calling validation...");
+        var errors = pattern.GetValidationErrors(capi);
+        capi.Logger.Notification($"PatternEditor: Validation returned {errors.Count} errors");
+
+        if (errors.Count > 0)
+        {
+            string errorMsg = string.Join(", ", errors);
+            capi.Logger.Warning($"PatternEditor: Validation errors: {errorMsg}");
+            capi.ShowChatMessage($"Pattern validation failed: {errorMsg}");
+            return true;
+        }
+
+        capi.Logger.Notification("PatternEditor: Validation passed, proceeding to save...");
+
+        string configPath = Path.Combine(capi.GetOrCreateDataPath("ModConfig"), "patternbuilder", "patterns");
+
+        if (!Directory.Exists(configPath))
+        {
+            Directory.CreateDirectory(configPath);
+        }
+
+        var existingFiles = Directory.GetFiles(configPath, $"slot{targetSlot}_*.json");
+        foreach (var oldFile in existingFiles)
+        {
+            try
+            {
+                File.Delete(oldFile);
+                capi.Logger.Notification($"PatternEditor: Deleted old file {Path.GetFileName(oldFile)}");
+            }
+            catch (Exception ex)
+            {
+                capi.Logger.Warning($"PatternEditor: Failed to delete old file {oldFile}: {ex.Message}");
+            }
+        }
+
+        string sanitizedName = SanitizeFileName(patternName);
+        string fileName = $"slot{targetSlot}_{sanitizedName}.json";
+        string filePath = Path.Combine(configPath, fileName);
+
+        try
+        {
+            string json = JsonConvert.SerializeObject(pattern, Formatting.Indented);
+            File.WriteAllText(filePath, json);
+
+            capi.ShowChatMessage($"Pattern saved to slot {targetSlot}: {fileName}");
+            capi.Logger.Notification($"PatternEditor: Saved pattern to {filePath}");
+            onPatternSaved?.Invoke(targetSlot);
+            TryClose();
+        }
+        catch (Exception ex)
+        {
+            capi.ShowChatMessage($"Failed to save pattern: {ex.Message}");
+            capi.Logger.Error($"PatternEditor: Failed to save pattern: {ex}");
+        }
+
         return true;
+    }
+
+    private string BuildSliceString()
+    {
+        var rows = new List<string>();
+
+        for (int y = 0; y < gridHeight; y++)
+        {
+            var rowChars = new char[gridWidth];
+            for (int x = 0; x < gridWidth; x++)
+            {
+                rowChars[x] = grid[y, x];
+            }
+            rows.Add(new string(rowChars));
+        }
+
+        return string.Join(",", rows);
+    }
+
+    private string SanitizeFileName(string name)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var sanitized = new string(name.Select(c => invalid.Contains(c) ? '_' : c).ToArray());
+        return sanitized.Replace(" ", "_").ToLowerInvariant();
     }
 
     private bool OnCloseButton()

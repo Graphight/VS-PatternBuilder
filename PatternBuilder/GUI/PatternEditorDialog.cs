@@ -33,6 +33,7 @@ public class PatternEditorDialog : GuiDialog
     private List<(char character, string blockCode, string displayName)> listBlocksFiltered;
     private string searchFilter = "";
     private bool blocksInitialized = false;
+    private bool sampleMode = false;
 
     public override string ToggleKeyCombinationCode => "patterneditor";
 
@@ -44,6 +45,7 @@ public class PatternEditorDialog : GuiDialog
         listBlocksAvailable = new List<(char, string, string)>();
         listBlocksFiltered = new List<(char, string, string)>();
         mapBlocks = new Dictionary<char, string>();
+        listSlices = new List<char[,]>();
 
         InitializeEmptyGrid();
     }
@@ -133,9 +135,10 @@ public class PatternEditorDialog : GuiDialog
 
         listBlocksFiltered = new List<(char, string, string)>(listBlocksAvailable);
 
-        mapBlocks = new Dictionary<char, string>();
-        mapBlocks['_'] = "air";
-        mapBlocks['P'] = "player";
+        if (!mapBlocks.ContainsKey('_'))
+            mapBlocks['_'] = "air";
+        if (!mapBlocks.ContainsKey('P'))
+            mapBlocks['P'] = "player";
 
         capi.Logger.Notification($"PatternEditor: Loaded {listBlocksAvailable.Count} blocks from registry");
     }
@@ -323,18 +326,21 @@ public class PatternEditorDialog : GuiDialog
         ElementBounds boundsGridContainer = ElementBounds.Fixed(0, currentY, 450, 400);
 
         ElementBounds boundsSearchLabel = ElementBounds.Fixed(460, currentY, 80, 25);
-        ElementBounds boundsSearch = ElementBounds.Fixed(460, currentY + 5, 250, 30);
+        ElementBounds boundsSearch = ElementBounds.Fixed(460, currentY + 5, 230, 30);
+        ElementBounds boundsSearchButton = ElementBounds.Fixed(695, currentY + 5, 65, 30);
+        ElementBounds boundsSampleModeLabel = ElementBounds.Fixed(770, currentY, 40, 25);
+        ElementBounds boundsSampleMode = ElementBounds.Fixed(770, currentY + 5, 30, 30);
         double pickerStartY = currentY + 40;
 
-        ElementBounds boundsPicker = ElementBounds.Fixed(460, pickerStartY, 250, 360);
+        ElementBounds boundsPicker = ElementBounds.Fixed(460, pickerStartY, 350, 360);
         ElementBounds boundsPickerClip = boundsPicker.ForkBoundingParent();
         ElementBounds boundsPickerInset = boundsPicker.FlatCopy().FixedGrow(6).WithFixedOffset(-3, -3);
         ElementBounds boundsPickerScrollbar = boundsPickerInset.CopyOffsetedSibling(boundsPickerInset.fixedWidth + 7, 0, 0, 0).WithFixedWidth(20);
 
         currentY += 410;
 
-        ElementBounds boundsSave = ElementBounds.Fixed(460, currentY, 120, 30);
-        ElementBounds boundsCancel = ElementBounds.Fixed(590, currentY, 120, 30);
+        ElementBounds boundsSave = ElementBounds.Fixed(560, currentY, 120, 30);
+        ElementBounds boundsCancel = ElementBounds.Fixed(690, currentY, 120, 30);
 
         string[] modeValues = new string[] { "adaptive", "carve" };
         string[] modeNames = new string[] { "Adaptive", "Carve" };
@@ -362,7 +368,10 @@ public class PatternEditorDialog : GuiDialog
                 .AddSmallButton("Copy Slice", OnCopySlice, boundsSliceCopy)
                 .AddSmallButton("Paste Slice", OnPasteSlice, boundsSlicePaste)
                 .AddStaticText("Type to search:", CairoFont.WhiteSmallText(), boundsSearchLabel)
-                .AddTextInput(boundsSearch, OnSearchChanged, CairoFont.WhiteDetailText(), "search-input");
+                .AddTextInput(boundsSearch, OnSearchChanged, CairoFont.WhiteDetailText(), "search-input")
+                .AddSmallButton("Search", OnSearchButtonClicked, boundsSearchButton)
+                .AddStaticText("Pick:", CairoFont.WhiteSmallText(), boundsSampleModeLabel)
+                .AddSwitch(OnSampleModeToggled, boundsSampleMode, "sample-mode-toggle");
 
         double cellSize = 28;
         double gridSpacing = 2;
@@ -396,7 +405,7 @@ public class PatternEditorDialog : GuiDialog
         int blockIndex = 0;
         foreach (var (character, blockCode, displayName) in listBlocksFiltered)
         {
-            ElementBounds boundsBlock = ElementBounds.Fixed(0, blockPickerY, 250, 25);
+            ElementBounds boundsBlock = ElementBounds.Fixed(0, blockPickerY, 350, 25);
 
             char displayChar = character != '\0' ? character :
                 (mapBlocks.ContainsValue(blockCode) ? mapBlocks.FirstOrDefault(kvp => kvp.Value == blockCode).Key : ' ');
@@ -429,6 +438,7 @@ public class PatternEditorDialog : GuiDialog
         SingleComposer.GetTextInput("width-input").SetValue(gridWidth.ToString());
         SingleComposer.GetTextInput("height-input").SetValue(gridHeight.ToString());
         SingleComposer.GetTextInput("search-input").SetValue(searchFilter);
+        SingleComposer.GetSwitch("sample-mode-toggle").SetValue(sampleMode);
     }
 
     private void OnNameChanged(string value)
@@ -444,11 +454,19 @@ public class PatternEditorDialog : GuiDialog
     private void OnSearchChanged(string value)
     {
         searchFilter = value;
-        FilterBlocks();
+    }
 
-        capi.Event.EnqueueMainThreadTask(() => {
-            SetupDialog();
-        }, "pattern-editor-search-refresh");
+    private bool OnSearchButtonClicked()
+    {
+        FilterBlocks();
+        RefreshGrid();
+        return true;
+    }
+
+    private void OnSampleModeToggled(bool on)
+    {
+        sampleMode = on;
+        capi.ShowChatMessage(sampleMode ? "Sample mode ON (click grid to pick block)" : "Sample mode OFF (click grid to paint)");
     }
 
     private void OnModeChanged(string value, bool selected)
@@ -639,6 +657,31 @@ public class PatternEditorDialog : GuiDialog
 
     private bool OnGridCellClicked(int x, int y)
     {
+        if (sampleMode)
+        {
+            char cellChar = listSlices[indexSliceCurrent][y, x];
+
+            if (cellChar == '_')
+            {
+                capi.ShowChatMessage("Empty cell - nothing to sample");
+                return true;
+            }
+
+            if (mapBlocks.ContainsKey(cellChar))
+            {
+                charBlockSelected = cellChar;
+                codeBlockSelected = mapBlocks[cellChar];
+                capi.ShowChatMessage($"Sampled: {charBlockSelected} - {codeBlockSelected}");
+                capi.Logger.Notification($"Sampled block from ({x}, {y}): {charBlockSelected} = {codeBlockSelected}");
+            }
+            else
+            {
+                capi.ShowChatMessage($"Cell contains unmapped character '{cellChar}'");
+            }
+
+            return true;
+        }
+
         capi.Logger.Notification($"Grid cell clicked: ({x}, {y}), painting '{charBlockSelected}' on slice {indexSliceCurrent}");
 
         listSlices[indexSliceCurrent][y, x] = charBlockSelected;
@@ -734,6 +777,8 @@ public class PatternEditorDialog : GuiDialog
         }
 
         var cleanedBlocks = new Dictionary<char, string>();
+        var missingMappings = new List<char>();
+
         foreach (char c in usedChars)
         {
             if (mapBlocks.ContainsKey(c))
@@ -744,7 +789,20 @@ public class PatternEditorDialog : GuiDialog
                     cleanedBlocks[c] = blockCode;
                 }
             }
+            else
+            {
+                missingMappings.Add(c);
+            }
         }
+
+        if (missingMappings.Count > 0)
+        {
+            string missingChars = string.Join(", ", missingMappings);
+            capi.ShowChatMessage($"Error: Pattern contains unmapped characters: {missingChars}. These blocks were not selected from the block picker.");
+            capi.Logger.Error($"PatternEditor: Missing block mappings for characters: {missingChars}");
+            return true;
+        }
+
         capi.Logger.Notification($"PatternEditor: Used chars: {string.Join(", ", usedChars)}");
         capi.Logger.Notification($"PatternEditor: Cleaned blocks: {string.Join(", ", cleanedBlocks.Select(kvp => $"{kvp.Key}={kvp.Value}"))}");
 

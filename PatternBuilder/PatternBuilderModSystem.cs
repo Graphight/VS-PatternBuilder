@@ -847,6 +847,12 @@ public class PatternBuilderModSystem : ModSystem
             {
                 string blockCode = currentPattern.GetBlockAt(x, y);
 
+                if (blockCode == null)
+                {
+                    Mod.Logger.Warning($"PatternBuilder: Null block code at position ({x}, {y}) in pattern");
+                    continue;
+                }
+
                 if (blockCode == "air" && !isCarveMode)
                     continue;
 

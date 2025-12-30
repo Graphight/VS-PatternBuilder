@@ -32,6 +32,7 @@ public class PatternEditorDialog : GuiDialog
     private List<(char character, string blockCode, string displayName)> listBlocksAvailable;
     private List<(char character, string blockCode, string displayName)> listBlocksFiltered;
     private string searchFilter = "";
+    private bool blocksInitialized = false;
 
     public override string ToggleKeyCombinationCode => "patterneditor";
 
@@ -40,7 +41,10 @@ public class PatternEditorDialog : GuiDialog
         this.capi = capi;
         this.onPatternSaved = onPatternSaved;
 
-        InitializeAvailableBlocks();
+        listBlocksAvailable = new List<(char, string, string)>();
+        listBlocksFiltered = new List<(char, string, string)>();
+        mapBlocks = new Dictionary<char, string>();
+
         InitializeEmptyGrid();
     }
 
@@ -185,6 +189,12 @@ public class PatternEditorDialog : GuiDialog
 
     private void FilterBlocks()
     {
+        if (!blocksInitialized)
+        {
+            InitializeAvailableBlocks();
+            blocksInitialized = true;
+        }
+
         if (string.IsNullOrWhiteSpace(searchFilter))
         {
             listBlocksFiltered = new List<(char, string, string)>
@@ -435,7 +445,10 @@ public class PatternEditorDialog : GuiDialog
     {
         searchFilter = value;
         FilterBlocks();
-        RefreshGrid();
+
+        capi.Event.EnqueueMainThreadTask(() => {
+            SetupDialog();
+        }, "pattern-editor-search-refresh");
     }
 
     private void OnModeChanged(string value, bool selected)

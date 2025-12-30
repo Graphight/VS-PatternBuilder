@@ -34,6 +34,9 @@ public class PatternEditorDialog : GuiDialog
     private string searchFilter = "";
     private bool blocksInitialized = false;
     private bool sampleMode = false;
+    private bool terrainFollowingEnabled = false;
+    private int transitionUpSlot = 0;
+    private int transitionDownSlot = 0;
 
     public override string ToggleKeyCombinationCode => "patterneditor";
 
@@ -304,6 +307,16 @@ public class PatternEditorDialog : GuiDialog
         ElementBounds boundsMetaMode = ElementBounds.Fixed(85, currentY, 150, 30);
         currentY += 40;
 
+        ElementBounds boundsTerrainLabel = ElementBounds.Fixed(0, currentY, 150, 25);
+        ElementBounds boundsTerrainToggle = ElementBounds.Fixed(155, currentY, 30, 30);
+        currentY += 35;
+
+        ElementBounds boundsUpSlotLabel = ElementBounds.Fixed(20, currentY, 100, 25);
+        ElementBounds boundsUpSlot = ElementBounds.Fixed(125, currentY, 60, 30);
+        ElementBounds boundsDownSlotLabel = ElementBounds.Fixed(195, currentY, 100, 25);
+        ElementBounds boundsDownSlot = ElementBounds.Fixed(300, currentY, 60, 30);
+        currentY += 40;
+
         ElementBounds boundsMetaWidthLabel = ElementBounds.Fixed(0, currentY, 80, 25);
         ElementBounds boundsMetaWidth = ElementBounds.Fixed(85, currentY, 60, 30);
         ElementBounds boundsMetaHeightLabel = ElementBounds.Fixed(155, currentY, 80, 25);
@@ -357,6 +370,12 @@ public class PatternEditorDialog : GuiDialog
                 .AddTextInput(boundsMetaDesc, OnDescriptionChanged, CairoFont.WhiteDetailText(), "description-input")
                 .AddStaticText("Mode:", CairoFont.WhiteSmallText(), boundsMetaModeLabel)
                 .AddDropDown(modeValues, modeNames, Array.IndexOf(modeValues, patternMode), OnModeChanged, boundsMetaMode, "mode-dropdown")
+                .AddStaticText("Terrain Following:", CairoFont.WhiteSmallText(), boundsTerrainLabel)
+                .AddSwitch(OnTerrainFollowingToggled, boundsTerrainToggle, "terrain-toggle")
+                .AddStaticText("Up Slot:", CairoFont.WhiteSmallText(), boundsUpSlotLabel)
+                .AddTextInput(boundsUpSlot, OnUpSlotChanged, CairoFont.WhiteDetailText(), "upslot-input")
+                .AddStaticText("Down Slot:", CairoFont.WhiteSmallText(), boundsDownSlotLabel)
+                .AddTextInput(boundsDownSlot, OnDownSlotChanged, CairoFont.WhiteDetailText(), "downslot-input")
                 .AddStaticText("Width:", CairoFont.WhiteSmallText(), boundsMetaWidthLabel)
                 .AddTextInput(boundsMetaWidth, OnWidthChanged, CairoFont.WhiteDetailText(), "width-input")
                 .AddStaticText("Height:", CairoFont.WhiteSmallText(), boundsMetaHeightLabel)
@@ -443,6 +462,9 @@ public class PatternEditorDialog : GuiDialog
         SingleComposer.GetTextInput("height-input").SetValue(gridHeight.ToString());
         SingleComposer.GetTextInput("search-input").SetValue(searchFilter);
         SingleComposer.GetSwitch("sample-mode-toggle").SetValue(sampleMode);
+        SingleComposer.GetSwitch("terrain-toggle").SetValue(terrainFollowingEnabled);
+        SingleComposer.GetTextInput("upslot-input").SetValue(transitionUpSlot.ToString());
+        SingleComposer.GetTextInput("downslot-input").SetValue(transitionDownSlot.ToString());
     }
 
     private void OnNameChanged(string value)
@@ -471,6 +493,27 @@ public class PatternEditorDialog : GuiDialog
     {
         sampleMode = on;
         capi.ShowChatMessage(sampleMode ? "Sample mode ON (click grid to pick block)" : "Sample mode OFF (click grid to paint)");
+    }
+
+    private void OnTerrainFollowingToggled(bool on)
+    {
+        terrainFollowingEnabled = on;
+    }
+
+    private void OnUpSlotChanged(string value)
+    {
+        if (int.TryParse(value, out int slot))
+        {
+            transitionUpSlot = slot;
+        }
+    }
+
+    private void OnDownSlotChanged(string value)
+    {
+        if (int.TryParse(value, out int slot))
+        {
+            transitionDownSlot = slot;
+        }
     }
 
     private void OnModeChanged(string value, bool selected)

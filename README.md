@@ -77,7 +77,7 @@ For more information look at the [ROADMAP.md](documentation/ROADMAP.md)
 .pb toggle       Toggle pattern building on/off
 .pb on/off       Enable/disable building mode
 .pb list         Show available patterns
-.pb slot <X>     Switch to pattern at slot <X> (1-50)
+.pb slot [X]     Switch to pattern at slot (1-50)
 .pb info         Show current pattern details
 .pb reload       Reload patterns from disk
 .pb preview      Toggle pattern preview on/off

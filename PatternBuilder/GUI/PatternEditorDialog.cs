@@ -30,6 +30,8 @@ public class PatternEditorDialog : GuiDialog
 
     private Dictionary<char, string> mapBlocks;
     private List<(char character, string blockCode, string displayName)> listBlocksAvailable;
+    private List<(char character, string blockCode, string displayName)> listBlocksFiltered;
+    private string searchFilter = "";
 
     public override string ToggleKeyCombinationCode => "patterneditor";
 
@@ -50,8 +52,10 @@ public class PatternEditorDialog : GuiDialog
         patternMode = "adaptive";
         gridWidth = 5;
         gridHeight = 5;
+        searchFilter = "";
 
         InitializeEmptyGrid();
+        FilterBlocks();
         TryOpen();
     }
 
@@ -63,8 +67,10 @@ public class PatternEditorDialog : GuiDialog
         patternMode = pattern.Mode ?? "adaptive";
         gridWidth = pattern.Width;
         gridHeight = pattern.Height;
+        searchFilter = "";
 
         LoadPatternIntoGrid(pattern);
+        FilterBlocks();
         TryOpen();
     }
 
@@ -76,31 +82,58 @@ public class PatternEditorDialog : GuiDialog
 
     private void InitializeAvailableBlocks()
     {
-        listBlocksAvailable = new List<(char, string, string)>
+        listBlocksAvailable = new List<(char, string, string)>();
+
+        listBlocksAvailable.Add(('_', "air", "Air (Empty)"));
+        listBlocksAvailable.Add(('P', "player", "Player Marker"));
+
+        var processedBlocks = new HashSet<string>();
+
+        foreach (var block in capi.World.Blocks)
         {
-            ('_', "air", "Air (Empty)"),
-            ('B', "game:cobblestone-granite", "Cobblestone"),
-            ('C', "game:stonebricks-granite", "Stone Bricks"),
-            ('D', "game:soil-medium-normal", "Soil"),
-            ('E', "game:gravel-granite", "Gravel"),
-            ('F', "game:log-placed-oak-ud", "Oak Log"),
-            ('G', "game:planks-oak", "Oak Planks"),
-            ('H', "game:claybricks-fire", "Clay Bricks"),
-            ('I', "game:glass-plain", "Glass"),
-            ('J', "game:sand-granite", "Sand"),
-            ('K', "game:stonebrickstairs-granite-north|up|f", "Stone Stairs"),
-            ('L', "game:torch-ground-lit-north", "Torch"),
-            ('M', "game:lantern-iron-on", "Lantern"),
-            ('N', "game:woodenfence-oak-empty-free", "Fence"),
-            ('O', "game:paperlantern-on", "Paper Lantern"),
-            ('P', "player", "Player"),
-        };
+            if (block == null || block.Code == null) continue;
+
+            string blockCode = block.Code.ToString();
+
+            if (processedBlocks.Contains(blockCode)) continue;
+
+            if (blockCode == "air" || blockCode == "game:air") continue;
+
+            if (block.BlockMaterial == Vintagestory.API.Common.EnumBlockMaterial.Liquid) continue;
+
+            if (blockCode.Contains("water") || blockCode.Contains("lava")) continue;
+
+            if (block.Id == 0) continue;
+
+            string displayName;
+            try
+            {
+                displayName = block.GetHeldItemName(new Vintagestory.API.Common.ItemStack(block));
+                if (string.IsNullOrWhiteSpace(displayName))
+                {
+                    displayName = blockCode;
+                }
+            }
+            catch
+            {
+                displayName = blockCode;
+            }
+
+            listBlocksAvailable.Add(('\0', blockCode, displayName));
+            processedBlocks.Add(blockCode);
+        }
+
+        listBlocksAvailable = listBlocksAvailable
+            .OrderBy(b => b.displayName)
+            .ToList();
+
+        listBlocksFiltered = new List<(char, string, string)>(listBlocksAvailable);
 
         mapBlocks = new Dictionary<char, string>();
-        foreach (var (character, blockCode, _) in listBlocksAvailable)
-        {
-            mapBlocks[character] = blockCode;
-        }
+        mapBlocks['_'] = "air";
+        mapBlocks['P'] = "player";
+
+        capi.Logger.Notification($"PatternEditor: Loaded {listBlocksAvailable.Count} blocks from registry");
     }
 
     private void InitializeEmptyGrid()
@@ -123,6 +156,51 @@ public class PatternEditorDialog : GuiDialog
 
         listSlices.Add(grid);
         indexSliceCurrent = 0;
+    }
+
+    private char GetNextAvailableCharacter()
+    {
+        var usedChars = new HashSet<char>(mapBlocks.Keys);
+
+        for (char c = 'A'; c <= 'Z'; c++)
+        {
+            if (!usedChars.Contains(c))
+                return c;
+        }
+
+        for (char c = 'a'; c <= 'z'; c++)
+        {
+            if (!usedChars.Contains(c))
+                return c;
+        }
+
+        for (char c = '0'; c <= '9'; c++)
+        {
+            if (!usedChars.Contains(c))
+                return c;
+        }
+
+        return '?';
+    }
+
+    private void FilterBlocks()
+    {
+        if (string.IsNullOrWhiteSpace(searchFilter))
+        {
+            listBlocksFiltered = new List<(char, string, string)>
+            {
+                ('_', "air", "Air (Empty)"),
+                ('P', "player", "Player Marker")
+            };
+        }
+        else
+        {
+            string filter = searchFilter.ToLowerInvariant();
+            listBlocksFiltered = listBlocksAvailable
+                .Where(b => b.displayName.ToLowerInvariant().Contains(filter) ||
+                           b.blockCode.ToLowerInvariant().Contains(filter))
+                .ToList();
+        }
     }
 
     private void LoadPatternIntoGrid(PatternDefinition pattern)
@@ -233,7 +311,12 @@ public class PatternEditorDialog : GuiDialog
 
         double gridStartY = currentY;
         ElementBounds boundsGridContainer = ElementBounds.Fixed(0, currentY, 450, 400);
-        ElementBounds boundsPicker = ElementBounds.Fixed(460, currentY, 250, 400);
+
+        ElementBounds boundsSearchLabel = ElementBounds.Fixed(460, currentY, 80, 25);
+        ElementBounds boundsSearch = ElementBounds.Fixed(460, currentY + 5, 250, 30);
+        double pickerStartY = currentY + 40;
+
+        ElementBounds boundsPicker = ElementBounds.Fixed(460, pickerStartY, 250, 360);
         ElementBounds boundsPickerClip = boundsPicker.ForkBoundingParent();
         ElementBounds boundsPickerInset = boundsPicker.FlatCopy().FixedGrow(6).WithFixedOffset(-3, -3);
         ElementBounds boundsPickerScrollbar = boundsPickerInset.CopyOffsetedSibling(boundsPickerInset.fixedWidth + 7, 0, 0, 0).WithFixedWidth(20);
@@ -267,7 +350,9 @@ public class PatternEditorDialog : GuiDialog
                 .AddSmallButton("Add Slice", OnAddSlice, boundsSliceAdd)
                 .AddSmallButton("Delete Slice", OnDeleteSlice, boundsSliceDelete)
                 .AddSmallButton("Copy Slice", OnCopySlice, boundsSliceCopy)
-                .AddSmallButton("Paste Slice", OnPasteSlice, boundsSlicePaste);
+                .AddSmallButton("Paste Slice", OnPasteSlice, boundsSlicePaste)
+                .AddStaticText("Type to search:", CairoFont.WhiteSmallText(), boundsSearchLabel)
+                .AddTextInput(boundsSearch, OnSearchChanged, CairoFont.WhiteDetailText(), "search-input");
 
         double cellSize = 28;
         double gridSpacing = 2;
@@ -298,15 +383,21 @@ public class PatternEditorDialog : GuiDialog
                 .BeginClip(boundsPickerClip);
 
         double blockPickerY = 0;
-        foreach (var (character, blockCode, displayName) in listBlocksAvailable)
+        int blockIndex = 0;
+        foreach (var (character, blockCode, displayName) in listBlocksFiltered)
         {
             ElementBounds boundsBlock = ElementBounds.Fixed(0, blockPickerY, 250, 25);
-            string buttonText = $"{character} - {displayName}";
+
+            char displayChar = character != '\0' ? character :
+                (mapBlocks.ContainsValue(blockCode) ? mapBlocks.FirstOrDefault(kvp => kvp.Value == blockCode).Key : ' ');
+
+            string buttonText = displayChar != ' ' ? $"{displayChar} - {displayName}" : displayName;
             char capturedChar = character;
             string capturedCode = blockCode;
 
-            composer.AddButton(buttonText, () => OnBlockSelected(capturedChar, capturedCode), boundsBlock, CairoFont.WhiteDetailText(), EnumButtonStyle.MainMenu, $"block-{character}");
+            composer.AddButton(buttonText, () => OnBlockSelected(capturedChar, capturedCode), boundsBlock, CairoFont.WhiteDetailText(), EnumButtonStyle.MainMenu, $"block-{blockIndex}");
             blockPickerY += 27;
+            blockIndex++;
         }
 
         composer.EndClip()
@@ -327,6 +418,7 @@ public class PatternEditorDialog : GuiDialog
         SingleComposer.GetTextInput("description-input").SetValue(patternDescription);
         SingleComposer.GetTextInput("width-input").SetValue(gridWidth.ToString());
         SingleComposer.GetTextInput("height-input").SetValue(gridHeight.ToString());
+        SingleComposer.GetTextInput("search-input").SetValue(searchFilter);
     }
 
     private void OnNameChanged(string value)
@@ -337,6 +429,13 @@ public class PatternEditorDialog : GuiDialog
     private void OnDescriptionChanged(string value)
     {
         patternDescription = value;
+    }
+
+    private void OnSearchChanged(string value)
+    {
+        searchFilter = value;
+        FilterBlocks();
+        RefreshGrid();
     }
 
     private void OnModeChanged(string value, bool selected)
@@ -502,9 +601,26 @@ public class PatternEditorDialog : GuiDialog
 
     private bool OnBlockSelected(char character, string blockCode)
     {
-        charBlockSelected = character;
+        if (character == '\0' || !mapBlocks.ContainsKey(character))
+        {
+            char existingChar = mapBlocks.FirstOrDefault(kvp => kvp.Value == blockCode).Key;
+            if (existingChar != '\0')
+            {
+                charBlockSelected = existingChar;
+            }
+            else
+            {
+                charBlockSelected = GetNextAvailableCharacter();
+                mapBlocks[charBlockSelected] = blockCode;
+            }
+        }
+        else
+        {
+            charBlockSelected = character;
+        }
+
         codeBlockSelected = blockCode;
-        capi.ShowChatMessage($"Selected: {character} - {blockCode}");
+        capi.ShowChatMessage($"Selected: {charBlockSelected} - {blockCode}");
         return true;
     }
 
@@ -536,12 +652,12 @@ public class PatternEditorDialog : GuiDialog
         var composer = SingleComposer;
         if (composer == null) return;
 
-        foreach (var (character, _, _) in listBlocksAvailable)
+        for (int i = 0; i < listBlocksFiltered.Count; i++)
         {
-            var button = composer.GetButton($"block-{character}");
+            var button = composer.GetButton($"block-{i}");
             if (button != null)
             {
-                double originalY = listBlocksAvailable.FindIndex(b => b.character == character) * 27;
+                double originalY = i * 27;
                 button.Bounds.fixedY = originalY - value;
                 button.Bounds.CalcWorldBounds();
             }

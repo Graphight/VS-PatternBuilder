@@ -219,6 +219,11 @@ public class PatternEditorDialog : GuiDialog
         ElementBounds resizeButtonBounds = ElementBounds.Fixed(310, currentY, 100, 30);
         currentY += 50;
 
+        ElementBounds prevSliceBounds = ElementBounds.Fixed(0, currentY, 100, 30);
+        ElementBounds sliceCounterBounds = ElementBounds.Fixed(110, currentY + 5, 240, 25);
+        ElementBounds nextSliceBounds = ElementBounds.Fixed(360, currentY, 100, 30);
+        currentY += 40;
+
         double gridStartY = currentY;
         ElementBounds gridContainerBounds = ElementBounds.Fixed(0, currentY, 450, 400);
         ElementBounds blockPickerBounds = ElementBounds.Fixed(460, currentY, 250, 400);
@@ -248,7 +253,10 @@ public class PatternEditorDialog : GuiDialog
                 .AddTextInput(widthInputBounds, OnWidthChanged, CairoFont.WhiteDetailText(), "width-input")
                 .AddStaticText("Height:", CairoFont.WhiteSmallText(), heightLabelBounds)
                 .AddTextInput(heightInputBounds, OnHeightChanged, CairoFont.WhiteDetailText(), "height-input")
-                .AddSmallButton("Resize Grid", OnResizeGrid, resizeButtonBounds);
+                .AddSmallButton("Resize Grid", OnResizeGrid, resizeButtonBounds)
+                .AddSmallButton("< Prev Slice", OnPreviousSlice, prevSliceBounds)
+                .AddStaticText($"Slice {currentSliceIndex + 1} of {slices.Count}", CairoFont.WhiteSmallText(), sliceCounterBounds, "slice-counter")
+                .AddSmallButton("Next Slice >", OnNextSlice, nextSliceBounds);
 
         double cellSize = 28;
         double gridSpacing = 2;
@@ -354,6 +362,36 @@ public class PatternEditorDialog : GuiDialog
 
         InitializeEmptyGrid();
         RefreshGrid();
+        return true;
+    }
+
+    private bool OnPreviousSlice()
+    {
+        if (currentSliceIndex > 0)
+        {
+            currentSliceIndex--;
+            capi.Logger.Notification($"PatternEditor: Navigated to slice {currentSliceIndex}");
+            RefreshGrid();
+        }
+        else
+        {
+            capi.ShowChatMessage("Already at first slice");
+        }
+        return true;
+    }
+
+    private bool OnNextSlice()
+    {
+        if (currentSliceIndex < slices.Count - 1)
+        {
+            currentSliceIndex++;
+            capi.Logger.Notification($"PatternEditor: Navigated to slice {currentSliceIndex}");
+            RefreshGrid();
+        }
+        else
+        {
+            capi.ShowChatMessage("Already at last slice");
+        }
         return true;
     }
 

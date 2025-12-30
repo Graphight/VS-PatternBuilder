@@ -339,8 +339,10 @@ public class PatternEditorDialog : GuiDialog
 
         currentY += 410;
 
-        ElementBounds boundsSave = ElementBounds.Fixed(560, currentY, 120, 30);
-        ElementBounds boundsCancel = ElementBounds.Fixed(690, currentY, 120, 30);
+        ElementBounds boundsExport = ElementBounds.Fixed(460, currentY, 120, 30);
+        ElementBounds boundsImport = ElementBounds.Fixed(590, currentY, 120, 30);
+        ElementBounds boundsSave = ElementBounds.Fixed(460, currentY + 40, 120, 30);
+        ElementBounds boundsCancel = ElementBounds.Fixed(590, currentY + 40, 120, 30);
 
         string[] modeValues = new string[] { "adaptive", "carve" };
         string[] modeNames = new string[] { "Adaptive", "Carve" };
@@ -421,6 +423,8 @@ public class PatternEditorDialog : GuiDialog
 
         composer.EndClip()
             .AddVerticalScrollbar(OnBlockPickerScroll, boundsPickerScrollbar, "block-picker-scrollbar")
+            .AddSmallButton("Export JSON", OnExportJSON, boundsExport)
+            .AddSmallButton("Import JSON", OnImportJSON, boundsImport)
             .AddSmallButton("Save Pattern", OnSavePattern, boundsSave)
             .AddSmallButton("Cancel", OnCloseButton, boundsCancel)
             .EndChildElements()
@@ -904,6 +908,148 @@ public class PatternEditorDialog : GuiDialog
         var invalid = Path.GetInvalidFileNameChars();
         var sanitized = new string(name.Select(c => invalid.Contains(c) ? '_' : c).ToArray());
         return sanitized.Replace(" ", "_").ToLowerInvariant();
+    }
+
+    private bool OnExportJSON()
+    {
+        try
+        {
+            var pattern = BuildPatternFromCurrentState();
+            if (pattern == null)
+            {
+                capi.ShowChatMessage("Cannot export: pattern validation failed");
+                return true;
+            }
+
+            string json = JsonConvert.SerializeObject(pattern, Formatting.Indented);
+            capi.Forms.SetClipboardText(json);
+            capi.ShowChatMessage("Pattern JSON copied to clipboard!");
+            capi.Logger.Notification($"PatternEditor: Exported pattern to clipboard ({json.Length} characters)");
+        }
+        catch (Exception ex)
+        {
+            capi.ShowChatMessage($"Export failed: {ex.Message}");
+            capi.Logger.Error($"PatternEditor: Export failed: {ex}");
+        }
+
+        return true;
+    }
+
+    private bool OnImportJSON()
+    {
+        try
+        {
+            string json = capi.Forms.GetClipboardText();
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                capi.ShowChatMessage("Clipboard is empty");
+                return true;
+            }
+
+            var pattern = JsonConvert.DeserializeObject<PatternDefinition>(json);
+            if (pattern == null)
+            {
+                capi.ShowChatMessage("Invalid JSON format");
+                return true;
+            }
+
+            var errors = pattern.GetValidationErrors(capi);
+            if (errors.Count > 0)
+            {
+                string errorMsg = string.Join(", ", errors);
+                capi.ShowChatMessage($"Pattern validation failed: {errorMsg}");
+                return true;
+            }
+
+            patternName = pattern.Name;
+            patternDescription = pattern.Description ?? "";
+            patternMode = pattern.Mode ?? "adaptive";
+            gridWidth = pattern.Width;
+            gridHeight = pattern.Height;
+
+            LoadPatternIntoGrid(pattern);
+            RefreshGrid();
+
+            capi.ShowChatMessage($"Imported pattern: {patternName}");
+            capi.Logger.Notification($"PatternEditor: Imported pattern from clipboard");
+        }
+        catch (Exception ex)
+        {
+            capi.ShowChatMessage($"Import failed: {ex.Message}");
+            capi.Logger.Error($"PatternEditor: Import failed: {ex}");
+        }
+
+        return true;
+    }
+
+    private PatternDefinition BuildPatternFromCurrentState()
+    {
+        if (string.IsNullOrWhiteSpace(patternName))
+        {
+            capi.ShowChatMessage("Pattern name cannot be empty");
+            return null;
+        }
+
+        if (gridWidth < 1 || gridHeight < 1)
+        {
+            capi.ShowChatMessage("Grid dimensions must be at least 1x1");
+            return null;
+        }
+
+        string[] sliceStrings = BuildSliceStrings();
+
+        var usedChars = new HashSet<char>();
+        foreach (var grid in listSlices)
+        {
+            for (int y = 0; y < gridHeight; y++)
+            {
+                for (int x = 0; x < gridWidth; x++)
+                {
+                    char c = grid[y, x];
+                    if (c != '_')
+                    {
+                        usedChars.Add(c);
+                    }
+                }
+            }
+        }
+
+        var cleanedBlocks = new Dictionary<char, string>();
+        var missingMappings = new List<char>();
+
+        foreach (char c in usedChars)
+        {
+            if (mapBlocks.ContainsKey(c))
+            {
+                string blockCode = mapBlocks[c];
+                if (blockCode != "air")
+                {
+                    cleanedBlocks[c] = blockCode;
+                }
+            }
+            else
+            {
+                missingMappings.Add(c);
+            }
+        }
+
+        if (missingMappings.Count > 0)
+        {
+            string missingChars = string.Join(", ", missingMappings);
+            capi.ShowChatMessage($"Error: Pattern contains unmapped characters: {missingChars}");
+            return null;
+        }
+
+        return new PatternDefinition
+        {
+            Name = patternName,
+            Description = string.IsNullOrWhiteSpace(patternDescription) ? null : patternDescription,
+            Slices = sliceStrings,
+            Width = gridWidth,
+            Height = gridHeight,
+            Mode = patternMode,
+            Blocks = cleanedBlocks
+        };
     }
 
     private bool OnCloseButton()

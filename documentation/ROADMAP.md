@@ -2,12 +2,12 @@
 
 ## In Progress
 
-### GUI Features (Sessions 1-3 Complete, Sessions 4-5 Planned)
-**Status**: Pattern browser and 2D editor complete
-**Branch**: feature/gui-pattern-editor
+### GUI Features (Sessions 1-4 Complete, Session 5 Planned)
+**Status**: Pattern browser and full 3D editor complete
+**Branch**: `FEAT-InGameEditor`
 **Documentation**: See `.claude/gui_feature_plan.md` and `.claude/session_notes/`
 
-**Completed** (Sessions 1-3):
+**Completed** (Sessions 1-4):
 - **Session 1-2**: Pattern browser dialog with search/filter, validation indicators, info panel, scrollbars
   - Hotkey: Ctrl+Shift+Space
   - Command: `.pb browser`
@@ -15,9 +15,14 @@
   - Command: `.pb edit [slot]`
   - Features: Metadata inputs, 16 common blocks, resize grid, pattern validation
   - Saves to JSON, loads existing patterns
+- **Session 4**: 3D pattern editor with slice management
+  - Slice navigation (prev/next buttons, counter display)
+  - Add/Delete slices (copy current, min 1 slice constraint)
+  - Copy/Paste slices (dimension validation)
+  - Save/load multi-slice patterns
+  - VBA-style naming convention (51 variables renamed)
 
-**Planned** (Sessions 4-5):
-- Session 4: 3D slice navigation and management
+**Planned** (Session 5):
 - Session 5: Enhanced block picker, search, import/export, undo/redo
 
 ---

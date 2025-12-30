@@ -22,7 +22,8 @@ public class PatternEditorDialog : GuiDialog
     private int gridWidth = 5;
     private int gridHeight = 5;
 
-    private char[,] grid;
+    private List<char[,]> slices;
+    private int currentSliceIndex = 0;
     private char selectedBlockChar = 'B';
     private string selectedBlockCode = "game:cobblestone-granite";
 
@@ -103,7 +104,8 @@ public class PatternEditorDialog : GuiDialog
 
     private void InitializeEmptyGrid()
     {
-        grid = new char[gridHeight, gridWidth];
+        slices = new List<char[,]>();
+        var grid = new char[gridHeight, gridWidth];
 
         for (int y = 0; y < gridHeight; y++)
         {
@@ -117,33 +119,54 @@ public class PatternEditorDialog : GuiDialog
         {
             grid[0, gridWidth / 2] = 'P';
         }
+
+        slices.Add(grid);
+        currentSliceIndex = 0;
     }
 
     private void LoadPatternIntoGrid(PatternDefinition pattern)
     {
-        grid = new char[gridHeight, gridWidth];
+        slices = new List<char[,]>();
         blockMappings = new Dictionary<char, string>(pattern.Blocks);
 
-        capi.Logger.Notification($"PatternEditor: Loading pattern into grid. Width={gridWidth}, Height={gridHeight}");
-        capi.Logger.Notification($"PatternEditor: Pattern slice: {pattern.Slices[0]}");
-        capi.Logger.Notification($"PatternEditor: Pattern blocks: {string.Join(", ", pattern.Blocks.Select(kvp => $"{kvp.Key}={kvp.Value}"))}");
+        capi.Logger.Notification($"PatternEditor: Loading pattern with {pattern.Slices.Length} slice(s). Width={gridWidth}, Height={gridHeight}");
 
-        string[] layers = pattern.Slices[0].Split(',');
-        if (layers.Length == gridHeight)
+        for (int sliceIdx = 0; sliceIdx < pattern.Slices.Length; sliceIdx++)
         {
-            for (int y = 0; y < gridHeight; y++)
+            var grid = new char[gridHeight, gridWidth];
+            string sliceString = pattern.Slices[sliceIdx];
+
+            capi.Logger.Notification($"PatternEditor: Loading slice {sliceIdx}: {sliceString}");
+
+            string[] layers = sliceString.Split(',');
+            if (layers.Length == gridHeight)
             {
-                string layer = layers[y];
-                if (layer.Length == gridWidth)
+                for (int y = 0; y < gridHeight; y++)
                 {
-                    for (int x = 0; x < gridWidth; x++)
+                    string layer = layers[y];
+                    if (layer.Length == gridWidth)
                     {
-                        grid[y, x] = layer[x];
+                        for (int x = 0; x < gridWidth; x++)
+                        {
+                            grid[y, x] = layer[x];
+                        }
+                    }
+                    else
+                    {
+                        capi.Logger.Warning($"PatternEditor: Slice {sliceIdx}, Layer {y} width mismatch: expected {gridWidth}, got {layer.Length}");
+                        for (int x = 0; x < gridWidth && x < layer.Length; x++)
+                        {
+                            grid[y, x] = layer[x];
+                        }
                     }
                 }
-                else
+            }
+            else
+            {
+                capi.Logger.Warning($"PatternEditor: Slice {sliceIdx} height mismatch: expected {gridHeight}, got {layers.Length}");
+                for (int y = 0; y < gridHeight && y < layers.Length; y++)
                 {
-                    capi.Logger.Warning($"PatternEditor: Layer {y} width mismatch: expected {gridWidth}, got {layer.Length}");
+                    string layer = layers[y];
                     for (int x = 0; x < gridWidth && x < layer.Length; x++)
                     {
                         grid[y, x] = layer[x];
@@ -151,12 +174,18 @@ public class PatternEditorDialog : GuiDialog
                 }
             }
 
-            capi.Logger.Notification($"PatternEditor: Grid loaded. First row: {new string(Enumerable.Range(0, gridWidth).Select(x => grid[0, x]).ToArray())}");
+            slices.Add(grid);
+        }
+
+        if (slices.Count == 0)
+        {
+            capi.Logger.Warning($"PatternEditor: No valid slices loaded. Initializing empty grid.");
+            InitializeEmptyGrid();
         }
         else
         {
-            capi.Logger.Warning($"PatternEditor: Pattern height mismatch: expected {gridHeight}, got {layers.Length}. Initializing empty grid.");
-            InitializeEmptyGrid();
+            currentSliceIndex = 0;
+            capi.Logger.Notification($"PatternEditor: Loaded {slices.Count} slice(s). First slice, first row: {new string(Enumerable.Range(0, gridWidth).Select(x => slices[0][0, x]).ToArray())}");
         }
     }
 
@@ -226,6 +255,8 @@ public class PatternEditorDialog : GuiDialog
         double totalGridWidth = gridWidth * (cellSize + gridSpacing);
         double totalGridHeight = gridHeight * (cellSize + gridSpacing);
 
+        var currentGrid = slices[currentSliceIndex];
+
         for (int y = 0; y < gridHeight; y++)
         {
             for (int x = 0; x < gridWidth; x++)
@@ -237,7 +268,7 @@ public class PatternEditorDialog : GuiDialog
 
                 int capturedX = x;
                 int capturedY = y;
-                char cellChar = grid[y, x];
+                char cellChar = currentGrid[y, x];
                 string cellText = cellChar.ToString();
 
                 composer.AddButton(cellText, () => OnGridCellClicked(capturedX, capturedY), cellBounds, CairoFont.WhiteSmallText(), EnumButtonStyle.Small, $"grid-cell-{x}-{y}");
@@ -336,9 +367,9 @@ public class PatternEditorDialog : GuiDialog
 
     private bool OnGridCellClicked(int x, int y)
     {
-        capi.Logger.Notification($"Grid cell clicked: ({x}, {y}), painting '{selectedBlockChar}'");
+        capi.Logger.Notification($"Grid cell clicked: ({x}, {y}), painting '{selectedBlockChar}' on slice {currentSliceIndex}");
 
-        grid[y, x] = selectedBlockChar;
+        slices[currentSliceIndex][y, x] = selectedBlockChar;
 
         if (!blockMappings.ContainsKey(selectedBlockChar) && selectedBlockChar != '_')
         {
@@ -392,11 +423,12 @@ public class PatternEditorDialog : GuiDialog
         }
 
         bool hasPlayerMarker = false;
+        var currentGrid = slices[currentSliceIndex];
         for (int y = 0; y < gridHeight; y++)
         {
             for (int x = 0; x < gridWidth; x++)
             {
-                if (grid[y, x] == 'P')
+                if (currentGrid[y, x] == 'P')
                 {
                     hasPlayerMarker = true;
                     break;
@@ -410,18 +442,21 @@ public class PatternEditorDialog : GuiDialog
             return true;
         }
 
-        string sliceString = BuildSliceString();
-        capi.Logger.Notification($"PatternEditor: Built slice string: {sliceString}");
+        string[] sliceStrings = BuildSliceStrings();
+        capi.Logger.Notification($"PatternEditor: Built {sliceStrings.Length} slice string(s)");
 
         var usedChars = new HashSet<char>();
-        for (int y = 0; y < gridHeight; y++)
+        foreach (var grid in slices)
         {
-            for (int x = 0; x < gridWidth; x++)
+            for (int y = 0; y < gridHeight; y++)
             {
-                char c = grid[y, x];
-                if (c != '_')
+                for (int x = 0; x < gridWidth; x++)
                 {
-                    usedChars.Add(c);
+                    char c = grid[y, x];
+                    if (c != '_')
+                    {
+                        usedChars.Add(c);
+                    }
                 }
             }
         }
@@ -445,7 +480,7 @@ public class PatternEditorDialog : GuiDialog
         {
             Name = patternName,
             Description = string.IsNullOrWhiteSpace(patternDescription) ? null : patternDescription,
-            Slices = new string[] { sliceString },
+            Slices = sliceStrings,
             Width = gridWidth,
             Height = gridHeight,
             Mode = patternMode,
@@ -510,21 +545,28 @@ public class PatternEditorDialog : GuiDialog
         return true;
     }
 
-    private string BuildSliceString()
+    private string[] BuildSliceStrings()
     {
-        var rows = new List<string>();
+        var sliceStrings = new List<string>();
 
-        for (int y = 0; y < gridHeight; y++)
+        foreach (var grid in slices)
         {
-            var rowChars = new char[gridWidth];
-            for (int x = 0; x < gridWidth; x++)
+            var rows = new List<string>();
+
+            for (int y = 0; y < gridHeight; y++)
             {
-                rowChars[x] = grid[y, x];
+                var rowChars = new char[gridWidth];
+                for (int x = 0; x < gridWidth; x++)
+                {
+                    rowChars[x] = grid[y, x];
+                }
+                rows.Add(new string(rowChars));
             }
-            rows.Add(new string(rowChars));
+
+            sliceStrings.Add(string.Join(",", rows));
         }
 
-        return string.Join(",", rows);
+        return sliceStrings.ToArray();
     }
 
     private string SanitizeFileName(string name)

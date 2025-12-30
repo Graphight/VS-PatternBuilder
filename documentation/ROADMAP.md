@@ -2,12 +2,12 @@
 
 ## In Progress
 
-### GUI Features (Sessions 1-4 Complete, Session 5 Planned)
-**Status**: Pattern browser and full 3D editor complete
-**Branch**: `FEAT-InGameEditor`
+### GUI Features (Sessions 1-5 Complete)
+**Status**: Pattern browser and full 3D editor complete with advanced features
+**Branch**: `FEAT-InGameEditor` (ready to merge)
 **Documentation**: See `.claude/gui_feature_plan.md` and `.claude/session_notes/`
 
-**Completed** (Sessions 1-4):
+**Completed** (Sessions 1-5):
 - **Session 1-2**: Pattern browser dialog with search/filter, validation indicators, info panel, scrollbars
   - Hotkey: Ctrl+Shift+Space
   - Command: `.pb browser`
@@ -21,9 +21,21 @@
   - Copy/Paste slices (dimension validation)
   - Save/load multi-slice patterns
   - VBA-style naming convention (51 variables renamed)
+- **Session 5**: Enhanced block picker and import/export functionality
+  - Enhanced block picker: Search 500+ game blocks with lazy loading
+  - Dynamic character assignment (A-Z, a-z, 0-9)
+  - Eyedropper tool: Sample blocks from grid (toggle "Pick" mode)
+  - Import/Export JSON: Clipboard integration for pattern sharing
+  - Critical bug fixes: Preserved block mappings, null safety in placement
+  - **Note**: Text-based picker acknowledged as "jank" - visual picker deferred to next session
 
-**Planned** (Session 5):
-- Session 5: Enhanced block picker, search, import/export, undo/redo
+**Deferred from Session 5** (planned for future):
+- Visual block picker (creative inventory style) - Next priority
+- Block categories and favorites
+- Real-time validation (save-time validation sufficient)
+- Terrain following UI (architectural blocker)
+- Undo/redo system (low priority)
+- Delete pattern from browser (user suggestion)
 
 ---
 

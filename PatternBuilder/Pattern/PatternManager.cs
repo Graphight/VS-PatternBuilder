@@ -99,6 +99,24 @@ public class PatternManager
         return null;
     }
 
+    public bool RemovePatternFromSlot(int slot)
+    {
+        if (!patterns.ContainsKey(slot))
+        {
+            return false;
+        }
+
+        patterns.Remove(slot);
+
+        if (currentSlot == slot)
+        {
+            currentSlot = FindFirstAvailableSlot();
+            ResetSliceIndex();
+        }
+
+        return true;
+    }
+
     private int FindFirstAvailableSlot()
     {
         for (int i = 1; i <= MaxSlots; i++)

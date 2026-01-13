@@ -187,7 +187,7 @@ public class PatternBuilderModSystem : ModSystem
         previewManager = new PreviewManager(api, previewRenderer, patternManager, blockIdCache);
         terrainFollowingManager = new TerrainFollowingManager(api);
 
-        patternBrowserDialog = new PatternBrowserDialog(api, patternManager, OnPatternSelected, OnReloadPatternsFromDialog);
+        patternBrowserDialog = new PatternBrowserDialog(api, patternManager, OnPatternSelected, OnReloadPatternsFromDialog, OnPatternDeletedFromDialog);
         patternEditorDialog = new PatternEditorDialog(api, OnPatternSavedFromEditor);
 
         RegisterCommands(api);
@@ -316,6 +316,36 @@ public class PatternBuilderModSystem : ModSystem
         LoadPatterns();
         CacheBlockIdsForPattern(patternManager.GetCurrentPattern());
         clientApi.ShowChatMessage("Patterns reloaded from disk");
+    }
+
+    private void OnPatternDeletedFromDialog(int slot)
+    {
+        var configPath = Path.Combine(clientApi.GetOrCreateDataPath("ModConfig"), "patternbuilder", "patterns");
+
+        try
+        {
+            var files = Directory.GetFiles(configPath, $"slot{slot}_*.json");
+            foreach (var file in files)
+            {
+                File.Delete(file);
+                clientApi.Logger.Notification($"PatternBuilder: Deleted pattern file: {Path.GetFileName(file)}");
+            }
+
+            var exactFile = Path.Combine(configPath, $"slot{slot}.json");
+            if (File.Exists(exactFile))
+            {
+                File.Delete(exactFile);
+                clientApi.Logger.Notification($"PatternBuilder: Deleted pattern file: slot{slot}.json");
+            }
+
+            patternManager.RemovePatternFromSlot(slot);
+            CacheBlockIdsForPattern(patternManager.GetCurrentPattern());
+        }
+        catch (Exception ex)
+        {
+            clientApi.Logger.Error($"PatternBuilder: Failed to delete pattern in slot {slot}: {ex.Message}");
+            clientApi.ShowChatMessage($"Error deleting pattern: {ex.Message}");
+        }
     }
 
     private TextCommandResult OnCommandBrowser(TextCommandCallingArgs args)

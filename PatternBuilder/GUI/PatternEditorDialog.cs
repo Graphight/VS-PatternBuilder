@@ -34,6 +34,11 @@ public class PatternEditorDialog : GuiDialog
     private string searchFilter = "";
     private bool blocksInitialized = false;
     private bool sampleMode = false;
+    private string directionModifier = "";
+    private static List<string> recentBlocks = new List<string>();
+    private const int MaxRecentBlocks = 10;
+    private string selectedCategory = "All";
+    private static readonly string[] BlockCategories = { "All", "Stone", "Wood", "Soil", "Metal", "Glass", "Decor", "Func" };
 
     public override string ToggleKeyCombinationCode => "patterneditor";
 
@@ -59,6 +64,8 @@ public class PatternEditorDialog : GuiDialog
         gridWidth = 5;
         gridHeight = 5;
         searchFilter = "";
+        directionModifier = "";
+        selectedCategory = "All";
 
         InitializeEmptyGrid();
         FilterBlocks();
@@ -74,6 +81,8 @@ public class PatternEditorDialog : GuiDialog
         gridWidth = pattern.Width;
         gridHeight = pattern.Height;
         searchFilter = "";
+        directionModifier = "";
+        selectedCategory = "All";
 
         LoadPatternIntoGrid(pattern);
         FilterBlocks();
@@ -198,21 +207,35 @@ public class PatternEditorDialog : GuiDialog
             blocksInitialized = true;
         }
 
+        listBlocksFiltered = new List<(char, string, string)>
+        {
+            ('_', "air", "Air (Empty)"),
+            ('P', "player", "Player Marker")
+        };
+
         if (string.IsNullOrWhiteSpace(searchFilter))
         {
-            listBlocksFiltered = new List<(char, string, string)>
+            if (selectedCategory != "All")
             {
-                ('_', "air", "Air (Empty)"),
-                ('P', "player", "Player Marker")
-            };
+                listBlocksFiltered.AddRange(listBlocksAvailable
+                    .Where(b => b.blockCode != "air" && b.blockCode != "player" &&
+                               GetBlockCategory(b.blockCode, b.displayName) == selectedCategory));
+            }
         }
         else
         {
             string filter = searchFilter.ToLowerInvariant();
-            listBlocksFiltered = listBlocksAvailable
+            var searchResults = listBlocksAvailable
                 .Where(b => b.displayName.ToLowerInvariant().Contains(filter) ||
-                           b.blockCode.ToLowerInvariant().Contains(filter))
-                .ToList();
+                           b.blockCode.ToLowerInvariant().Contains(filter));
+
+            if (selectedCategory != "All")
+            {
+                searchResults = searchResults.Where(b =>
+                    GetBlockCategory(b.blockCode, b.displayName) == selectedCategory);
+            }
+
+            listBlocksFiltered.AddRange(searchResults);
         }
     }
 
@@ -325,14 +348,22 @@ public class PatternEditorDialog : GuiDialog
         double gridStartY = currentY;
         ElementBounds boundsGridContainer = ElementBounds.Fixed(0, currentY, 450, 400);
 
-        ElementBounds boundsSearchLabel = ElementBounds.Fixed(460, currentY, 100, 25);
-        ElementBounds boundsSearch = ElementBounds.Fixed(460, currentY + 5, 210, 30);
-        ElementBounds boundsSearchButton = ElementBounds.Fixed(675, currentY + 5, 65, 30);
-        ElementBounds boundsSampleModeLabel = ElementBounds.Fixed(750, currentY, 50, 25);
-        ElementBounds boundsSampleMode = ElementBounds.Fixed(750, currentY + 5, 30, 30);
-        double pickerStartY = currentY + 40;
+        ElementBounds boundsRecentLabel = ElementBounds.Fixed(460, currentY, 100, 20);
+        double recentRowY = currentY + 22;
 
-        ElementBounds boundsPicker = ElementBounds.Fixed(460, pickerStartY, 350, 360);
+        ElementBounds boundsSearchLabel = ElementBounds.Fixed(460, currentY + 80, 100, 25);
+        ElementBounds boundsSearch = ElementBounds.Fixed(460, currentY + 85, 210, 30);
+        ElementBounds boundsSearchButton = ElementBounds.Fixed(675, currentY + 85, 65, 30);
+        ElementBounds boundsSampleModeLabel = ElementBounds.Fixed(750, currentY + 80, 50, 25);
+        ElementBounds boundsSampleMode = ElementBounds.Fixed(750, currentY + 85, 30, 30);
+
+        ElementBounds boundsDirectionLabel = ElementBounds.Fixed(460, currentY + 120, 80, 25);
+        ElementBounds boundsDirection = ElementBounds.Fixed(545, currentY + 120, 120, 30);
+
+        double categoryY = currentY + 155;
+        double pickerStartY = currentY + 185;
+
+        ElementBounds boundsPicker = ElementBounds.Fixed(460, pickerStartY, 350, 215);
         ElementBounds boundsPickerClip = boundsPicker.ForkBoundingParent();
         ElementBounds boundsPickerInset = boundsPicker.FlatCopy().FixedGrow(6).WithFixedOffset(-3, -3);
         ElementBounds boundsPickerScrollbar = boundsPickerInset.CopyOffsetedSibling(boundsPickerInset.fixedWidth + 7, 0, 0, 0).WithFixedWidth(20);
@@ -346,6 +377,11 @@ public class PatternEditorDialog : GuiDialog
 
         string[] modeValues = new string[] { "adaptive", "carve" };
         string[] modeNames = new string[] { "Adaptive", "Carve" };
+
+        string[] directionValues = new string[] { "", "|f", "|b", "|l", "|r", "|up", "|down", "|auto" };
+        string[] directionNames = new string[] { "None", "Forward", "Back", "Left", "Right", "Up", "Down", "Auto" };
+        int directionIndex = Array.IndexOf(directionValues, directionModifier);
+        if (directionIndex < 0) directionIndex = 0;
 
         var composer = capi.Gui.CreateCompo("patterneditor", boundsDialog)
             .AddShadedDialogBG(boundsBg)
@@ -369,11 +405,66 @@ public class PatternEditorDialog : GuiDialog
                 .AddSmallButton("Delete Slice", OnDeleteSlice, boundsSliceDelete)
                 .AddSmallButton("Copy Slice", OnCopySlice, boundsSliceCopy)
                 .AddSmallButton("Paste Slice", OnPasteSlice, boundsSlicePaste)
+                .AddStaticText("Recent:", CairoFont.WhiteSmallText(), boundsRecentLabel);
+
+        if (recentBlocks.Count == 0)
+        {
+            ElementBounds boundsNoRecent = ElementBounds.Fixed(460, recentRowY, 350, 22);
+            composer.AddStaticText("(no recent blocks)", CairoFont.WhiteDetailText(), boundsNoRecent);
+        }
+        else
+        {
+            double recentX = 460;
+            int col = 0;
+            int row = 0;
+            double buttonWidth = 170;
+            double buttonHeight = 22;
+            double spacing = 5;
+
+            for (int i = 0; i < recentBlocks.Count && i < MaxRecentBlocks; i++)
+            {
+                string blockCode = recentBlocks[i];
+                string displayName = GetBlockDisplayNameForCode(blockCode);
+                if (displayName.Length > 18) displayName = displayName.Substring(0, 15) + "...";
+
+                double btnX = recentX + col * (buttonWidth + spacing);
+                double btnY = recentRowY + row * (buttonHeight + 3);
+                ElementBounds boundsRecentBtn = ElementBounds.Fixed(btnX, btnY, buttonWidth, buttonHeight);
+
+                string capturedCode = blockCode;
+                composer.AddButton(displayName, () => OnRecentBlockClicked(capturedCode), boundsRecentBtn, CairoFont.WhiteDetailText(), EnumButtonStyle.Small, $"recent-{i}");
+
+                col++;
+                if (col >= 2)
+                {
+                    col = 0;
+                    row++;
+                }
+            }
+        }
+
+        composer.AddStaticText("Pick:", CairoFont.WhiteSmallText(), boundsSampleModeLabel)
+                .AddSwitch(OnSampleModeToggled, boundsSampleMode, "sample-mode-toggle")
+                .AddStaticText("Direction:", CairoFont.WhiteSmallText(), boundsDirectionLabel)
+                .AddDropDown(directionValues, directionNames, directionIndex, OnDirectionChanged, boundsDirection, "direction-dropdown")
                 .AddStaticText("Type to search:", CairoFont.WhiteSmallText(), boundsSearchLabel)
                 .AddTextInput(boundsSearch, OnSearchChanged, CairoFont.WhiteDetailText(), "search-input")
-                .AddSmallButton("Search", OnSearchButtonClicked, boundsSearchButton)
-                .AddStaticText("Pick:", CairoFont.WhiteSmallText(), boundsSampleModeLabel)
-                .AddSwitch(OnSampleModeToggled, boundsSampleMode, "sample-mode-toggle");
+                .AddSmallButton("Search", OnSearchButtonClicked, boundsSearchButton);
+
+        double catX = 460;
+        double catBtnWidth = 42;
+        for (int i = 0; i < BlockCategories.Length; i++)
+        {
+            string cat = BlockCategories[i];
+            ElementBounds boundsCatBtn = ElementBounds.Fixed(catX + i * (catBtnWidth + 2), categoryY, catBtnWidth, 24);
+            string capturedCat = cat;
+
+            CairoFont catFont = cat == selectedCategory
+                ? CairoFont.WhiteDetailText().WithWeight(Cairo.FontWeight.Bold)
+                : CairoFont.WhiteDetailText();
+
+            composer.AddButton(cat, () => OnCategoryClicked(capturedCat), boundsCatBtn, catFont, EnumButtonStyle.Small, $"cat-{cat}");
+        }
 
         double cellSize = 28;
         double gridSpacing = 2;
@@ -433,7 +524,7 @@ public class PatternEditorDialog : GuiDialog
         SingleComposer = composer;
 
         SingleComposer.GetScrollbar("block-picker-scrollbar").SetHeights(
-            (float)boundsPicker.fixedHeight,
+            215f,
             (float)blockPickerY
         );
 
@@ -479,6 +570,127 @@ public class PatternEditorDialog : GuiDialog
         {
             patternMode = value;
         }
+    }
+
+    private void OnDirectionChanged(string value, bool selected)
+    {
+        if (selected)
+        {
+            directionModifier = value;
+            string dirName = string.IsNullOrEmpty(value) ? "None" : value;
+            capi.ShowChatMessage($"Direction modifier set to: {dirName}");
+        }
+    }
+
+    private void AddToRecentBlocks(string blockCode)
+    {
+        if (string.IsNullOrEmpty(blockCode) || blockCode == "air" || blockCode == "player")
+            return;
+
+        recentBlocks.Remove(blockCode);
+        recentBlocks.Insert(0, blockCode);
+
+        if (recentBlocks.Count > MaxRecentBlocks)
+        {
+            recentBlocks.RemoveAt(recentBlocks.Count - 1);
+        }
+    }
+
+    private bool OnRecentBlockClicked(string blockCode)
+    {
+        char existingChar = mapBlocks.FirstOrDefault(kvp => kvp.Value == blockCode).Key;
+        if (existingChar != '\0')
+        {
+            charBlockSelected = existingChar;
+        }
+        else
+        {
+            charBlockSelected = GetNextAvailableCharacter();
+            mapBlocks[charBlockSelected] = blockCode;
+        }
+
+        codeBlockSelected = blockCode;
+        recentBlocks.Remove(blockCode);
+        recentBlocks.Insert(0, blockCode);
+
+        capi.ShowChatMessage($"Selected: {charBlockSelected} - {blockCode}");
+        return true;
+    }
+
+    private string GetBlockDisplayNameForCode(string blockCode)
+    {
+        string baseCode = blockCode.Split('|')[0];
+
+        var block = capi.World.GetBlock(new AssetLocation(baseCode));
+        if (block != null)
+        {
+            try
+            {
+                string name = block.GetHeldItemName(new Vintagestory.API.Common.ItemStack(block));
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    if (blockCode.Contains("|"))
+                    {
+                        string modifier = blockCode.Substring(blockCode.IndexOf('|'));
+                        return $"{name} {modifier}";
+                    }
+                    return name;
+                }
+            }
+            catch { }
+        }
+
+        return blockCode.Replace("game:", "");
+    }
+
+    private string GetBlockCategory(string blockCode, string displayName)
+    {
+        string lower = (blockCode + " " + displayName).ToLowerInvariant();
+
+        if (lower.Contains("stone") || lower.Contains("rock") || lower.Contains("cobble") ||
+            lower.Contains("brick") || lower.Contains("granite") || lower.Contains("marble") ||
+            lower.Contains("basalt") || lower.Contains("slate") || lower.Contains("clay"))
+            return "Stone";
+
+        if (lower.Contains("wood") || lower.Contains("plank") || lower.Contains("log") ||
+            lower.Contains("fence") || lower.Contains("barrel") || lower.Contains("crate") ||
+            lower.Contains("door") || lower.Contains("trapdoor") || lower.Contains("ladder"))
+            return "Wood";
+
+        if (lower.Contains("soil") || lower.Contains("dirt") || lower.Contains("grass") ||
+            lower.Contains("gravel") || lower.Contains("sand") || lower.Contains("peat") ||
+            lower.Contains("farmland") || lower.Contains("forest"))
+            return "Soil";
+
+        if (lower.Contains("iron") || lower.Contains("copper") || lower.Contains("steel") ||
+            lower.Contains("bronze") || lower.Contains("gold") || lower.Contains("silver") ||
+            lower.Contains("metal") || lower.Contains("anvil"))
+            return "Metal";
+
+        if (lower.Contains("glass") || lower.Contains("window") || lower.Contains("quartz"))
+            return "Glass";
+
+        if (lower.Contains("lantern") || lower.Contains("torch") || lower.Contains("candle") ||
+            lower.Contains("lamp") || lower.Contains("light") || lower.Contains("carpet") ||
+            lower.Contains("rug") || lower.Contains("painting") || lower.Contains("banner") ||
+            lower.Contains("pot") || lower.Contains("vase") || lower.Contains("flower"))
+            return "Decor";
+
+        if (lower.Contains("chest") || lower.Contains("hopper") || lower.Contains("chute") ||
+            lower.Contains("lever") || lower.Contains("button") || lower.Contains("machine") ||
+            lower.Contains("crucible") || lower.Contains("forge") || lower.Contains("bellows") ||
+            lower.Contains("helve") || lower.Contains("pulverizer") || lower.Contains("quern"))
+            return "Func";
+
+        return "All";
+    }
+
+    private bool OnCategoryClicked(string category)
+    {
+        selectedCategory = category;
+        FilterBlocks();
+        RefreshGrid();
+        return true;
     }
 
     private void OnWidthChanged(string value)
@@ -636,9 +848,15 @@ public class PatternEditorDialog : GuiDialog
 
     private bool OnBlockSelected(char character, string blockCode)
     {
+        string fullBlockCode = blockCode;
+        if (!string.IsNullOrEmpty(directionModifier) && blockCode != "air" && blockCode != "player")
+        {
+            fullBlockCode = blockCode + directionModifier;
+        }
+
         if (character == '\0' || !mapBlocks.ContainsKey(character))
         {
-            char existingChar = mapBlocks.FirstOrDefault(kvp => kvp.Value == blockCode).Key;
+            char existingChar = mapBlocks.FirstOrDefault(kvp => kvp.Value == fullBlockCode).Key;
             if (existingChar != '\0')
             {
                 charBlockSelected = existingChar;
@@ -646,16 +864,22 @@ public class PatternEditorDialog : GuiDialog
             else
             {
                 charBlockSelected = GetNextAvailableCharacter();
-                mapBlocks[charBlockSelected] = blockCode;
+                mapBlocks[charBlockSelected] = fullBlockCode;
             }
         }
         else
         {
             charBlockSelected = character;
+            if (mapBlocks.ContainsKey(character) && mapBlocks[character] != fullBlockCode)
+            {
+                charBlockSelected = GetNextAvailableCharacter();
+                mapBlocks[charBlockSelected] = fullBlockCode;
+            }
         }
 
-        codeBlockSelected = blockCode;
-        capi.ShowChatMessage($"Selected: {charBlockSelected} - {blockCode}");
+        codeBlockSelected = fullBlockCode;
+        AddToRecentBlocks(fullBlockCode);
+        capi.ShowChatMessage($"Selected: {charBlockSelected} - {fullBlockCode}");
         return true;
     }
 

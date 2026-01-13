@@ -13,17 +13,19 @@ public class PatternBrowserDialog : GuiDialog
     private readonly PatternManager patternManager;
     private Action<int> onPatternSelected;
     private Action onReloadRequested;
+    private Action<int> onPatternDeleted;
     private string searchText = "";
     private int selectedSlot = -1;
     private Dictionary<int, double> buttonOriginalY = new Dictionary<int, double>();
 
     public override string ToggleKeyCombinationCode => "patternbrowser";
 
-    public PatternBrowserDialog(ICoreClientAPI capi, PatternManager patternManager, Action<int> onPatternSelected, Action onReloadRequested) : base(capi)
+    public PatternBrowserDialog(ICoreClientAPI capi, PatternManager patternManager, Action<int> onPatternSelected, Action onReloadRequested, Action<int> onPatternDeleted = null) : base(capi)
     {
         this.patternManager = patternManager;
         this.onPatternSelected = onPatternSelected;
         this.onReloadRequested = onReloadRequested;
+        this.onPatternDeleted = onPatternDeleted;
     }
 
     public override void OnGuiOpened()
@@ -54,8 +56,9 @@ public class PatternBrowserDialog : GuiDialog
         ElementBounds boundsInfoClip = boundsInfoPanel.ForkBoundingParent();
         ElementBounds boundsInfoInset = boundsInfoPanel.FlatCopy().FixedGrow(6).WithFixedOffset(-3, -3);
 
-        ElementBounds boundsSelect = ElementBounds.Fixed(210, 490, 200, 30);
-        ElementBounds boundsReload = ElementBounds.Fixed(0, 490, 200, 30);
+        ElementBounds boundsReload = ElementBounds.Fixed(0, 490, 140, 30);
+        ElementBounds boundsDelete = ElementBounds.Fixed(150, 490, 140, 30);
+        ElementBounds boundsSelect = ElementBounds.Fixed(300, 490, 140, 30);
 
         ElementBounds boundsScrollbar = boundsInset.CopyOffsetedSibling(boundsInset.fixedWidth + 7, 0, 0, 0)
             .WithFixedWidth(20);
@@ -135,8 +138,9 @@ public class PatternBrowserDialog : GuiDialog
             .AddDynamicText("", CairoFont.WhiteSmallText(), boundsInfoPanel.FlatCopy().WithFixedPadding(5), "info-text")
             .EndClip()
             .AddVerticalScrollbar(OnInfoScroll, boundsInfoScrollbar, "info-scrollbar")
-            .AddSmallButton("Reload Patterns", OnReloadPatterns, boundsReload)
-            .AddSmallButton("Select Pattern", OnSelectPattern, boundsSelect)
+            .AddSmallButton("Reload", OnReloadPatterns, boundsReload)
+            .AddSmallButton("Delete", OnDeletePattern, boundsDelete)
+            .AddSmallButton("Select", OnSelectPattern, boundsSelect)
             .EndChildElements()
             .Compose();
 
@@ -326,6 +330,31 @@ public class PatternBrowserDialog : GuiDialog
     private bool OnReloadPatterns()
     {
         onReloadRequested?.Invoke();
+        SetupDialog();
+        return true;
+    }
+
+    private bool OnDeletePattern()
+    {
+        if (selectedSlot < 1 || selectedSlot > PatternManager.MaxSlots)
+        {
+            capi.ShowChatMessage("Please select a pattern first");
+            return true;
+        }
+
+        if (!patternManager.HasPatternInSlot(selectedSlot))
+        {
+            capi.ShowChatMessage($"Slot {selectedSlot} is empty");
+            return true;
+        }
+
+        var pattern = patternManager.GetPatternInSlot(selectedSlot);
+        string patternName = pattern?.Name ?? $"Slot {selectedSlot}";
+
+        onPatternDeleted?.Invoke(selectedSlot);
+        capi.ShowChatMessage($"Deleted pattern: {patternName}");
+
+        selectedSlot = -1;
         SetupDialog();
         return true;
     }

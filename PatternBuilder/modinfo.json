@@ -9,6 +9,6 @@
     "description": "Automated pattern placement - walk to build roads, walls, and tunnels",
     "version": "0.5.1",
     "dependencies": {
-        "game": "1.21.6"
+        "game": "1.22.1"
     }
 }

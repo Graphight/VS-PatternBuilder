@@ -2,8 +2,8 @@
 
 A Vintage Story mod that automates placement of repeating block patterns (roads, walls, tunnels) to reduce late-game construction tedium.
 
-![Game Version](https://img.shields.io/badge/Vintage%20Story-1.21.5+-blue)
-![Version](https://img.shields.io/badge/Alpha-0.5.0-red)
+![Game Version](https://img.shields.io/badge/Vintage%20Story-1.22.1+-blue)
+![Version](https://img.shields.io/badge/Alpha-0.6.0-red)
 
 [//]: # (![Multiplayer]&#40;https://img.shields.io/badge/Multiplayer-supported-green&#41;)
 
@@ -403,7 +403,7 @@ See [documentation/ROADMAP.md](documentation/ROADMAP.md) for active issues and b
 
 **Mod doesn't load**:
 - Check `modinfo.json` is valid JSON
-- Verify Vintage Story version compatibility (1.21.0+)
+- Verify Vintage Story version compatibility (1.22.0+)
 - Check for compilation errors in build output
 
 **Blocks don't place**:
@@ -423,7 +423,7 @@ See [documentation/ROADMAP.md](documentation/ROADMAP.md) for active issues and b
 
 ## Development
 
-- Built for Vintage Story 1.21.5+ (version when I started working on it)
+- Built for Vintage Story 1.22+ (there is a legacy version for 1.21 using .NET 8.0)
 
 Probably not backwards compatible, but, you are welcome to try it (please backup your worlds first)
 

@@ -258,6 +258,36 @@ public class PatternLoader
                         { 'P', "player" }
                     }
                 }
+            },
+            new
+            {
+                FileName = "slot6_grand_boulevard.json",
+                Pattern = new PatternDefinition
+                {
+                    Name = "Grand Boulevard",
+                    Description = "5-wide limestone road passing through stone archways every 8 blocks",
+                    Slices = [
+                        "DDDDD,BLLLB,__P__,_____,_____,_____",
+                        "DDDDD,BLLLB,__P__,_____,_____,_____",
+                        "DDDDD,BLLLB,__P__,_____,_____,_____",
+                        "DDDDD,BLLLB,__P__,_____,_____,_____",
+                        "DDDDD,BLLLB,__P__,_____,_____,_____",
+                        "DDDDD,BLLLB,__P__,_____,_____,_____",
+                        "DDDDD,BLLLB,__P__,_____,_____,_____",
+                        "DDDDD,BLLLB,A_P_A,A___A,A___A,AAAAA"
+                    ],
+                    Width = 5,
+                    Height = 6,
+                    Mode = "adaptive",
+                    Blocks = new Dictionary<char, string> 
+                    {
+                        { 'D', "game:packeddirt" },
+                        { 'B', "game:cobblestone-basalt" },
+                        { 'L', "game:stonebricks-limestone" },
+                        { 'A', "game:stonebricks-andesite" },
+                        { 'P', "player" }
+                    }
+                }
             }
         };
 

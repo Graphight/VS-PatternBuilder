@@ -37,6 +37,7 @@ public class PatternBuilderModSystem : ModSystem
     private CardinalDirection? lastDirection;
     private CardinalDirection? forwardDirection;
     private PatternType? lastPlacedPatternType;
+    private int lastRoadLevelY;
     private long tickListenerId;
     private int currentTickInterval = NormalTickIntervalMs;
 
@@ -528,6 +529,7 @@ public class PatternBuilderModSystem : ModSystem
             if (player?.Entity != null)
             {
                 lastPlacementPos = player.Entity.Pos.AsBlockPos;
+                lastRoadLevelY = lastPlacementPos.Y;
             }
         }
         else
@@ -638,7 +640,8 @@ public class PatternBuilderModSystem : ModSystem
 
         // Peek at movement direction to determine if we're descending
         direction = CalculateDirection(lastPlacementPos, currentPos);
-        BlockPos placePos = OffsetPositionForward(currentPos, direction, 1);
+        var roadBasePos = new BlockPos(currentPos.X, lastRoadLevelY, currentPos.Z);
+        BlockPos placePos = OffsetPositionForward(roadBasePos, direction, 1);
 
         var basePattern = patternManager.GetCurrentPattern();
         bool isCarveMode = basePattern.Mode == "carve";
@@ -727,6 +730,7 @@ public class PatternBuilderModSystem : ModSystem
             lastDirection = direction;
             lastPlacementPos = currentPos.Copy();
             lastPlacedPatternType = patternType;
+            lastRoadLevelY = patternType == PatternType.TransitionUp ? adjustedPlacePos.Y : currentPos.Y;
         }
 
         // Always update preview when building is enabled (2 blocks ahead)

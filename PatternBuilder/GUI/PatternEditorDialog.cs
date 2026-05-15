@@ -114,7 +114,8 @@ public class PatternEditorDialog : GuiDialog
 
             if (blockCode == "air" || blockCode == "game:air") continue;
 
-            if (block.BlockMaterial == Vintagestory.API.Common.EnumBlockMaterial.Liquid) continue;
+            if (block.BlockMaterial == Vintagestory.API.Common.EnumBlockMaterial.Water
+                || block.BlockMaterial == Vintagestory.API.Common.EnumBlockMaterial.Lava) continue;
 
             if (blockCode.Contains("water") || blockCode.Contains("lava")) continue;
 

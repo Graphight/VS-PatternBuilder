@@ -722,6 +722,17 @@ public class PatternBuilderModSystem : ModSystem
                     PatternType.TransitionDown => basePattern.TransitionDownLayer ?? basePattern,
                     _ => basePattern
                 };
+
+                // Suppress transitions while player hasn't physically reached the current road level.
+                // Without this, advancing lastRoadLevelY causes the lookahead to immediately see
+                // the opposite transition (terrain below new road level = TransitionDown after an Up,
+                // or terrain above new road level = TransitionUp after a Down), creating oscillation.
+                if (patternType != PatternType.Normal && currentPos.Y != lastRoadLevelY)
+                {
+                    patternType = PatternType.Normal;
+                    patternToUse = basePattern;
+                    adjustedPlacePos = placePos.Copy();
+                }
             }
 
             // Place the pattern at adjusted elevation
@@ -730,7 +741,8 @@ public class PatternBuilderModSystem : ModSystem
             lastDirection = direction;
             lastPlacementPos = currentPos.Copy();
             lastPlacedPatternType = patternType;
-            lastRoadLevelY = patternType == PatternType.TransitionUp ? adjustedPlacePos.Y : currentPos.Y;
+            if (patternType == PatternType.TransitionUp) lastRoadLevelY++;
+            else if (patternType == PatternType.TransitionDown) lastRoadLevelY--;
         }
 
         // Always update preview when building is enabled (2 blocks ahead)
